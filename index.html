@@ -8,7 +8,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; }
   .wrap { max-width: 500px; margin: 0 auto; padding: 20px 16px 60px; }
-  .title { font-size: 20px; font-weight: 700; color: #16a34a; margin-bottom: 20px; }
+  .title { font-size: 21px; font-weight: 700; color: #16a34a; margin-bottom: 20px; }
   .card { background: #fff; border-radius: 18px; padding: 22px; box-shadow: 0 1px 10px rgba(0,0,0,.05); margin-bottom: 18px; }
   .label { font-size: 15px; color: #555; margin-bottom: 14px; }
   .pick { display: block; width: 100%; padding: 38px 16px; border: 2px dashed #cbd5e1; border-radius: 14px; text-align: center; color: #16a34a; font-size: 16px; font-weight: 600; cursor: pointer; background: #f9fafb; }
@@ -28,7 +28,6 @@
   .food .fn { font-size: 15px; font-weight: 600; }
   .food .fa { font-size: 12px; color: #888; margin-top: 2px; }
   .food .fk { font-size: 15px; font-weight: 700; color: #16a34a; white-space: nowrap; }
-  .hidden { display: none; }
   .loading { text-align: center; color: #16a34a; padding: 24px; font-weight: 600; }
   .err { text-align: center; color: #dc2626; padding: 20px; font-weight: 600; line-height: 1.6; }
   .spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #d1fae5; border-top-color: #16a34a; border-radius: 50%; animation: r 0.8s linear infinite; margin-bottom: 10px; }
@@ -36,24 +35,30 @@
   </style>
  </head>
  <body>
-  <div class="wrap">
-   <div class="title">カロリーレンズ</div>div>
-   <div class="card">
-    <div class="label">食事の写真を撮影、または選んでください</div>div>
-    <label class="pick" for="file" id="picklabel">写真を選ぶ</label>label>
-    <input type="file" id="file" accept="image/*">
-    <img id="preview" alt="">
-    <button class="btn" id="go" disabled>カロリーを計算する</button>button>
-   </div>div>
-   <div id="result" class="card hidden"></div>div>
-  </div>div>
+  <div id="app"></div>div>
   <script>
+   var app = document.getElementById('app');
+   app.innerHTML = [
+    '<div class="wrap">',
+    '<div class="title">カロリーレンズ</div>',
+    '<div class="card">',
+    '<div class="label">食事の写真を撮影、または選んでください</div>',
+    '<label class="pick" for="file" id="picklabel">写真を選ぶ</label>',
+    '<input type="file" id="file" accept="image/*">',
+    '<img id="preview" alt="">',
+    '<button class="btn" id="go" disabled>カロリーを計算する</button>',
+    '</div>',
+    '<div id="result" class="card" style="display:none"></div>',
+    '</div>'
+    ].join('');
+
    var fileEl = document.getElementById('file');
    var preview = document.getElementById('preview');
    var go = document.getElementById('go');
    var result = document.getElementById('result');
    var picklabel = document.getElementById('picklabel');
    var imageData = null;
+
    fileEl.addEventListener('change', function () {
     var f = fileEl.files[0];
     if (!f) return;
@@ -79,10 +84,11 @@
     img.onerror = function () { picklabel.textContent = '写真を選ぶ'; alert('画像を読み込めませんでした'); };
     img.src = url;
    });
+
    go.addEventListener('click', async function () {
     if (!imageData) return;
     go.disabled = true;
-    result.classList.remove('hidden');
+    result.style.display = 'block';
     result.innerHTML = '<div class="loading"><div class="spin"></div><div>解析中...</div></div>';
     try {
      var res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: imageData }) });
@@ -90,17 +96,17 @@
      var data;
      try { data = JSON.parse(text); } catch (e) { throw new Error('サーバー応答エラーが発生しました。もう一度お試しください'); }
      if (data.error) throw new Error(data.error);
-     var html = '<div class="kcal-wrap"><div class="kcal">' + data.total_kcal + '</div><div class="kcal-unit">kcal</div></div>';
-     html += '<div class="macros">';
-     html += '<div class="macro"><div class="v">' + data.protein_g + 'g</div><div class="n">タンパク質</div></div>';
-     html += '<div class="macro"><div class="v">' + data.fat_g + 'g</div><div class="n">脂質</div></div>';
-     html += '<div class="macro"><div class="v">' + data.carbs_g + 'g</div><div class="n">炭水化物</div></div>';
-     html += '</div>';
-     html += '<div class="section">検出された食品</div>';
+     var h = '<div class="kcal-wrap"><div class="kcal">' + data.total_kcal + '</div><div class="kcal-unit">kcal</div></div>';
+     h += '<div class="macros">';
+     h += '<div class="macro"><div class="v">' + data.protein_g + 'g</div><div class="n">タンパク質</div></div>';
+     h += '<div class="macro"><div class="v">' + data.fat_g + 'g</div><div class="n">脂質</div></div>';
+     h += '<div class="macro"><div class="v">' + data.carbs_g + 'g</div><div class="n">炭水化物</div></div>';
+     h += '</div>';
+     h += '<div class="section">検出された食品</div>';
      data.items.forEach(function (it) {
-      html += '<div class="food"><div><div class="fn">' + it.name + '</div><div class="fa">' + it.amount + '</div></div><div class="fk">' + it.kcal + ' kcal</div></div>';
+      h += '<div class="food"><div><div class="fn">' + it.name + '</div><div class="fa">' + it.amount + '</div></div><div class="fk">' + it.kcal + ' kcal</div></div>';
      });
-     result.innerHTML = html;
+     result.innerHTML = h;
     } catch (err) {
      result.innerHTML = '<div class="err">' + err.message + '</div>';
     }
