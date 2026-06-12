@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>カロリーレンズ 📸</title>
-<style>
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カロリーレンズ</title>
+ <style>
   * { box-sizing: border-box; font-family: -apple-system, sans-serif; }
   body { margin: 0; background: #f0fdf4; color: #064e3b; }
   .wrap { max-width: 480px; margin: 0 auto; padding: 16px; }
@@ -18,57 +18,63 @@
   .macros { display: flex; justify-content: space-around; margin-top: 12px; text-align: center; }
   .hidden { display: none; }
   .loading { text-align: center; color: #16a34a; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <h1>📸 カロリーレンズ</h1>
+  </style>
+ </head>
+ <body>
+  <div class="wrap">
+   <h1>カロリーレンズ</h1>
   <div class="card">
-    <p>食事の写真を選んでください</p>
-    <input type="file" id="file" accept="image/*" capture="environment">
-    <img id="preview">
-    <button id="go" disabled>カロリーを計算する</button>
-  </div>
-  <div id="result" class="card hidden"></div>
-</div>
-<script>
-const fileEl = document.getElementById('file');
-const preview = document.getElementById('preview');
-const go = document.getElementById('go');
-const result = document.getElementById('result');
-let base64 = null;
-
-fileEl.onchange = e => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    preview.src = ev.target.result;
-    preview.style.display = 'block';
-    base64 = ev.target.result.split(',')[1];
-    go.disabled = false;
-  };
-  reader.readAsDataURL(f);
-};
-
-go.onclick = async () => {
-  go.disabled = true;
-  result.classList.remove('hidden');
-  result.innerHTML = '<div class="loading">解析中… 🔍</div>';
-  try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64 })
-    });
-    const data = await res.json();
+  <p>食事の写真を選んでください</p>
+  <input type="file" id="file" accept="image/*">
+  <img id="preview">
+  <button id="go">カロリーを計算する</button>button>
+  </div>div>
+  <div id="result" class="card hidden"></div>div>
+  </div>div>
+ <script>
+  var fileEl = document.getElementById('file');
+  var preview = document.getElementById('preview');
+  var go = document.getElementById('go');
+  var result = document.getElementById('result');
+  function readFile() {
+   return new Promise(function (resolve, reject) {
+    var f = fileEl.files[0];
+    if (!f) { reject(new Error('写真が選ばれていません')); return; }
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+     preview.src = ev.target.result;
+     preview.style.display = 'block';
+     resolve(ev.target.result.split(',')[1]);
+    };
+    reader.onerror = function () { reject(new Error('画像の読み込みに失敗しました')); };
+    reader.readAsDataURL(f);
+   });
+  }
+  go.onclick = async function () {
+   go.disabled = true;
+   result.classList.remove('hidden');
+   result.innerHTML = '<div class="loading">解析中...</div>';
+   try {
+    var base64 = await readFile();
+    var res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64 }) });
+    var data = await res.json();
     if (data.error) throw new Error(data.error);
-    let html = '<div class="kcal">' + data.total_kcal + ' kcal</div>';
+    var html = '<div class="kcal">' + data.total_kcal + ' kcal</div>';
     html += '<div class="macros"><div>タンパク質<br><b>' + data.protein_g + 'g</b></div><div>脂質<br><b>' + data.fat_g + 'g</b></div><div>炭水化物<br><b>' + data.carbs_g + 'g</b></div></div>';
-    html += '<h3>🔍 検出された食品</h3>';
-    data.items.forEach(it => {
-      html += '<div class="food"><span>' + it.name + '<br><small>' + it.amount + '</small></span><b>' + it.kcal + ' kcal</b></div>';
+    html += '<h3>検出された食品</h3>';
+    data.items.forEach(function (it) {
+     html += '<div class="food"><span>' + it.name + '<br><small>' + it.amount + '</small></span><b>' + it.kcal + ' kcal</b></div>';
     });
     result.innerHTML = html;
-  } catch (err) {
-    result.innerHTML =
+   } catch (err) {
+    result.innerHTML = '<div class="loading">エラー: ' + err.message + '</div>';
+   }
+   go.disabled = false;
+  };
+ </script>
+ </body>
+</html>html>
+ </script></p></h1>
+ </body>
+ </style></title>
+ </head>
