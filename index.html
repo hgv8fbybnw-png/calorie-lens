@@ -16,6 +16,7 @@ body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-syste
 #preview { width: 100%; border-radius: 14px; margin: 16px 0 0; display: none; }
 .btn { width: 100%; padding: 17px; border: none; border-radius: 14px; background: #16a34a; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 16px; }
 .btn:disabled { background: #cbd5e1; }
+.hint { font-size: 12px; color: #999; margin-top: 12px; text-align: center; line-height: 1.6; }
 .kcal-wrap { text-align: center; padding: 10px 0; }
 .kcal { font-size: 46px; font-weight: 800; color: #16a34a; line-height: 1; }
 .kcal-unit { font-size: 16px; color: #16a34a; font-weight: 600; }
@@ -28,6 +29,12 @@ body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-syste
 .food .fn { font-size: 15px; font-weight: 600; }
 .food .fa { font-size: 12px; color: #888; margin-top: 2px; }
 .food .fk { font-size: 15px; font-weight: 700; color: #16a34a; white-space: nowrap; }
+.badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-top: 5px; }
+.badge.barcode { background: #dcfce7; color: #15803d; }
+.badge.official { background: #dbeafe; color: #1d4ed8; }
+.badge.label { background: #fef9c3; color: #a16207; }
+.badge.estimate { background: #fee2e2; color: #b91c1c; }
+.srcnote { font-size: 12px; color: #888; margin-top: 14px; text-align: center; line-height: 1.6; }
 .loading { text-align: center; color: #16a34a; padding: 24px; font-weight: 600; }
 .err { text-align: center; color: #dc2626; padding: 20px; font-weight: 600; line-height: 1.6; }
 .spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #d1fae5; border-top-color: #16a34a; border-radius: 50%; animation: r 0.8s linear infinite; margin-bottom: 10px; }
@@ -36,17 +43,19 @@ body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-syste
 </head>
 <body>
 <div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script>
 var app = document.getElementById("app");
 app.innerHTML = [
   '<div class="wrap">',
   '<div class="title">カロリーレンズ</div>',
   '<div class="card">',
-  '<div class="label">食事の写真を撮影、または選んでください</div>',
+  '<div class="label">食事やパッケージの写真を撮影、または選んでください</div>',
   '<label class="pick" for="file" id="picklabel">写真を選ぶ</label>',
   '<input type="file" id="file" accept="image/*">',
   '<img id="preview" alt="">',
   '<button class="btn" id="go" disabled>カロリーを計算する</button>',
+  '<div class="hint">パッケージのバーコードが写っていると、公式の栄養成分を正確に取得します</div>',
   '</div>',
   '<div id="result" class="card" style="display:none"></div>',
   '</div>'
@@ -58,6 +67,7 @@ var go = document.getElementById("go");
 var result = document.getElementById("result");
 var picklabel = document.getElementById("picklabel");
 var imageData = null;
+var lastBitmapUrl = null;
 
 function resetPick() { picklabel.textContent = imageData ? "写真を変更する" : "写真を選ぶ"; }
 
@@ -75,6 +85,7 @@ function drawToData(src, width, height) {
   var dataUrl = canvas.toDataURL("image/jpeg", 0.85);
   imageData = dataUrl.split(",")[1];
   preview.src = dataUrl;
+  lastBitmapUrl = dataUrl;
   preview.style.display = "block";
   go.disabled = false;
   resetPick();
@@ -126,17 +137,74 @@ fileEl.addEventListener("change", function () {
   handleFile(f);
 });
 
+// 写真からバーコード(JANコード)を検出する。検出できなければ null。
+async function detectBarcode(dataUrl) {
+  if (!dataUrl) return null;
+  // 1) ブラウザ標準 BarcodeDetector（高精度・端末ネイティブ）
+  try {
+    if ("BarcodeDetector" in window) {
+      var formats = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"];
+      var detector = new window.BarcodeDetector({ formats: formats });
+      var img = await loadImage(dataUrl);
+      var codes = await detector.detect(img);
+      if (codes && codes.length) {
+        var raw = (codes[0].rawValue || "").replace(/\D/g, "");
+        if (raw.length >= 8) return raw;
+      }
+    }
+  } catch (e) {}
+  // 2) ZXing にフォールバック
+  try {
+    if (window.ZXing && window.ZXing.BrowserMultiFormatReader) {
+      var reader = new window.ZXing.BrowserMultiFormatReader();
+      var res = await reader.decodeFromImageUrl(dataUrl);
+      if (res && res.text) {
+        var raw2 = res.text.replace(/\D/g, "");
+        if (raw2.length >= 8) return raw2;
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+function loadImage(src) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.onload = function () { resolve(img); };
+    img.onerror = function () { reject(new Error("img")); };
+    img.src = src;
+  });
+}
+
+function srcBadge(source) {
+  if (source === "barcode") return '<span class="badge barcode">バーコード照合（確定）</span>';
+  if (source === "official") return '<span class="badge official">公式データ</span>';
+  if (source === "label") return '<span class="badge label">パッケージ印字</span>';
+  return '<span class="badge estimate">画像からの推定</span>';
+}
+
 go.addEventListener("click", async function () {
   if (!imageData) return;
   go.disabled = true;
   result.style.display = "block";
-  result.innerHTML = '<div class="loading"><div class="spin"></div><div>解析中...</div></div>';
+  result.innerHTML = '<div class="loading"><div class="spin"></div><div>バーコードを確認中...</div></div>';
+
+  // まず画像からバーコード検出を試みる
+  var barcode = null;
+  try { barcode = await detectBarcode(lastBitmapUrl); } catch (e) {}
+
+  result.innerHTML = '<div class="loading"><div class="spin"></div><div>' + (barcode ? '公式の栄養成分を取得中...' : '解析中...') + '</div></div>';
+
   try {
-    var res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: imageData }) });
+    var payload = { image: imageData };
+    if (barcode) payload.barcode = barcode;
+    var res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     var text = await res.text();
     var data;
     try { data = JSON.parse(text); } catch (e) { throw new Error("サーバー応答エラーが発生しました。もう一度お試しください"); }
     if (data.error) throw new Error(data.error);
+
+    var topSource = (data.items && data.items[0] && data.items[0].source) ? data.items[0].source : "estimate";
     var h = '<div class="kcal-wrap"><div class="kcal">' + data.total_kcal + '</div><div class="kcal-unit">kcal</div></div>';
     h += '<div class="macros">';
     h += '<div class="macro"><div class="v">' + data.protein_g + 'g</div><div class="n">タンパク質</div></div>';
@@ -145,8 +213,11 @@ go.addEventListener("click", async function () {
     h += '</div>';
     h += '<div class="section">検出された食品</div>';
     data.items.forEach(function (it) {
-      h += '<div class="food"><div><div class="fn">' + it.name + '</div><div class="fa">' + it.amount + '</div></div><div class="fk">' + it.kcal + ' kcal</div></div>';
+      h += '<div class="food"><div><div class="fn">' + it.name + '</div><div class="fa">' + (it.amount || '') + '</div>' + srcBadge(it.source) + '</div><div class="fk">' + it.kcal + ' kcal</div></div>';
     });
+    if (topSource === "estimate") {
+      h += '<div class="srcnote">この結果には画像からの推定値が含まれます。パッケージのバーコードを写すと、より正確になります。</div>';
+    }
     result.innerHTML = h;
   } catch (err) {
     result.innerHTML = '<div class="err">' + err.message + '</div>';
