@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カロリーレンズ 📸</title>
+<style>
+  * { box-sizing: border-box; font-family: -apple-system, sans-serif; }
+  body { margin: 0; background: #f0fdf4; color: #064e3b; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 16px; }
+  h1 { color: #16a34a; font-size: 22px; }
+  .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 16px; }
+  button { width: 100%; padding: 16px; border: none; border-radius: 12px; background: #16a34a; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
+  button:disabled { opacity: .5; }
+  #preview { width: 100%; border-radius: 12px; margin: 12px 0; display: none; }
+  .food { display: flex; justify-content: space-between; padding: 12px; background: #f0fdf4; border-radius: 10px; margin-top: 8px; }
+  .kcal { font-size: 40px; font-weight: bold; color: #16a34a; text-align: center; }
+  .macros { display: flex; justify-content: space-around; margin-top: 12px; text-align: center; }
+  .hidden { display: none; }
+  .loading { text-align: center; color: #16a34a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📸 カロリーレンズ</h1>
+  <div class="card">
+    <p>食事の写真を選んでください</p>
+    <input type="file" id="file" accept="image/*" capture="environment">
+    <img id="preview">
+    <button id="go" disabled>カロリーを計算する</button>
+  </div>
+  <div id="result" class="card hidden"></div>
+</div>
+<script>
+const fileEl = document.getElementById('file');
+const preview = document.getElementById('preview');
+const go = document.getElementById('go');
+const result = document.getElementById('result');
+let base64 = null;
+
+fileEl.onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+    base64 = ev.target.result.split(',')[1];
+    go.disabled = false;
+  };
+  reader.readAsDataURL(f);
+};
+
+go.onclick = async () => {
+  go.disabled = true;
+  result.classList.remove('hidden');
+  result.innerHTML = '<div class="loading">解析中… 🔍</div>';
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64 })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    let html = '<div class="kcal">' + data.total_kcal + ' kcal</div>';
+    html += '<div class="macros"><div>タンパク質<br><b>' + data.protein_g + 'g</b></div><div>脂質<br><b>' + data.fat_g + 'g</b></div><div>炭水化物<br><b>' + data.carbs_g + 'g</b></div></div>';
+    html += '<h3>🔍 検出された食品</h3>';
+    data.items.forEach(it => {
+      html += '<div class="food"><span>' + it.name + '<br><small>' + it.amount + '</small></span><b>' + it.kcal + ' kcal</b></div>';
+    });
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML =
