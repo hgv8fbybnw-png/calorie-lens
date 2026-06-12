@@ -1,117 +1,158 @@
 <!DOCTYPE html>
 <html lang="ja">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>カロリーレンズ</title>
- <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; }
-  .wrap { max-width: 500px; margin: 0 auto; padding: 20px 16px 60px; }
-  .title { font-size: 21px; font-weight: 700; color: #16a34a; margin-bottom: 20px; }
-  .card { background: #fff; border-radius: 18px; padding: 22px; box-shadow: 0 1px 10px rgba(0,0,0,.05); margin-bottom: 18px; }
-  .label { font-size: 15px; color: #555; margin-bottom: 14px; }
-  .pick { display: block; width: 100%; padding: 38px 16px; border: 2px dashed #cbd5e1; border-radius: 14px; text-align: center; color: #16a34a; font-size: 16px; font-weight: 600; cursor: pointer; background: #f9fafb; }
-  #file { display: none; }
-  #preview { width: 100%; border-radius: 14px; margin: 16px 0 0; display: none; }
-  .btn { width: 100%; padding: 17px; border: none; border-radius: 14px; background: #16a34a; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 16px; }
-  .btn:disabled { background: #cbd5e1; }
-  .kcal-wrap { text-align: center; padding: 10px 0; }
-  .kcal { font-size: 46px; font-weight: 800; color: #16a34a; line-height: 1; }
-  .kcal-unit { font-size: 16px; color: #16a34a; font-weight: 600; }
-  .macros { display: flex; gap: 10px; margin: 20px 0; }
-  .macro { flex: 1; text-align: center; background: #f7f8fa; border-radius: 12px; padding: 12px 4px; }
-  .macro .v { font-size: 18px; font-weight: 700; }
-  .macro .n { font-size: 12px; color: #777; margin-top: 4px; }
-  .section { font-size: 14px; font-weight: 700; color: #444; margin: 18px 0 10px; }
-  .food { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: #f7f8fa; border-radius: 12px; margin-top: 8px; }
-  .food .fn { font-size: 15px; font-weight: 600; }
-  .food .fa { font-size: 12px; color: #888; margin-top: 2px; }
-  .food .fk { font-size: 15px; font-weight: 700; color: #16a34a; white-space: nowrap; }
-  .loading { text-align: center; color: #16a34a; padding: 24px; font-weight: 600; }
-  .err { text-align: center; color: #dc2626; padding: 20px; font-weight: 600; line-height: 1.6; }
-  .spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #d1fae5; border-top-color: #16a34a; border-radius: 50%; animation: r 0.8s linear infinite; margin-bottom: 10px; }
-  @keyframes r { to { transform: rotate(360deg); } }
-  </style>
- </head>
- <body>
-  <div id="app"></div>
-  <script>
-   var app = document.getElementById('app');
-   app.innerHTML = [
-    '<div class="wrap">',
-    '<div class="title">カロリーレンズ</div>',
-    '<div class="card">',
-    '<div class="label">食事の写真を撮影、または選んでください</div>',
-    '<label class="pick" for="file" id="picklabel">写真を選ぶ</label>',
-    '<input type="file" id="file" accept="image/*">',
-    '<img id="preview" alt="">',
-    '<button class="btn" id="go" disabled>カロリーを計算する</button>',
-    '</div>',
-    '<div id="result" class="card" style="display:none"></div>',
-    '</div>'
-    ].join('');
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>カロリーレンズ</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; }
+.wrap { max-width: 500px; margin: 0 auto; padding: 20px 16px 60px; }
+.title { font-size: 21px; font-weight: 700; color: #16a34a; margin-bottom: 20px; }
+.card { background: #fff; border-radius: 18px; padding: 22px; box-shadow: 0 1px 10px rgba(0,0,0,.05); margin-bottom: 18px; }
+.label { font-size: 15px; color: #555; margin-bottom: 14px; }
+.pick { display: block; width: 100%; padding: 38px 16px; border: 2px dashed #cbd5e1; border-radius: 14px; text-align: center; color: #16a34a; font-size: 16px; font-weight: 600; cursor: pointer; background: #f9fafb; }
+#file { display: none; }
+#preview { width: 100%; border-radius: 14px; margin: 16px 0 0; display: none; }
+.btn { width: 100%; padding: 17px; border: none; border-radius: 14px; background: #16a34a; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 16px; }
+.btn:disabled { background: #cbd5e1; }
+.kcal-wrap { text-align: center; padding: 10px 0; }
+.kcal { font-size: 46px; font-weight: 800; color: #16a34a; line-height: 1; }
+.kcal-unit { font-size: 16px; color: #16a34a; font-weight: 600; }
+.macros { display: flex; gap: 10px; margin: 20px 0; }
+.macro { flex: 1; text-align: center; background: #f7f8fa; border-radius: 12px; padding: 12px 4px; }
+.macro .v { font-size: 18px; font-weight: 700; }
+.macro .n { font-size: 12px; color: #777; margin-top: 4px; }
+.section { font-size: 14px; font-weight: 700; color: #444; margin: 18px 0 10px; }
+.food { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: #f7f8fa; border-radius: 12px; margin-top: 8px; }
+.food .fn { font-size: 15px; font-weight: 600; }
+.food .fa { font-size: 12px; color: #888; margin-top: 2px; }
+.food .fk { font-size: 15px; font-weight: 700; color: #16a34a; white-space: nowrap; }
+.loading { text-align: center; color: #16a34a; padding: 24px; font-weight: 600; }
+.err { text-align: center; color: #dc2626; padding: 20px; font-weight: 600; line-height: 1.6; }
+.spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #d1fae5; border-top-color: #16a34a; border-radius: 50%; animation: r 0.8s linear infinite; margin-bottom: 10px; }
+@keyframes r { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+var app = document.getElementById("app");
+app.innerHTML = [
+  '<div class="wrap">',
+  '<div class="title">カロリーレンズ</div>',
+  '<div class="card">',
+  '<div class="label">食事の写真を撮影、または選んでください</div>',
+  '<label class="pick" for="file" id="picklabel">写真を選ぶ</label>',
+  '<input type="file" id="file" accept="image/*">',
+  '<img id="preview" alt="">',
+  '<button class="btn" id="go" disabled>カロリーを計算する</button>',
+  '</div>',
+  '<div id="result" class="card" style="display:none"></div>',
+  '</div>'
+].join("");
 
-   var fileEl = document.getElementById('file');
-   var preview = document.getElementById('preview');
-   var go = document.getElementById('go');
-   var result = document.getElementById('result');
-   var picklabel = document.getElementById('picklabel');
-   var imageData = null;
+var fileEl = document.getElementById("file");
+var preview = document.getElementById("preview");
+var go = document.getElementById("go");
+var result = document.getElementById("result");
+var picklabel = document.getElementById("picklabel");
+var imageData = null;
 
-   fileEl.addEventListener('change', function () {
-    var f = fileEl.files[0];
-    if (!f) return;
-    picklabel.textContent = '読み込み中...';
-    var img = new Image();
-    var url = URL.createObjectURL(f);
-    img.onload = function () {
-     var max = 1024;
-     var w = img.width, h = img.height;
-     if (w > h && w > max) { h = Math.round(h * max / w); w = max; }
-     else if (h > max) { w = Math.round(w * max / h); h = max; }
-     var canvas = document.createElement('canvas');
-     canvas.width = w; canvas.height = h;
-     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-     var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-     imageData = dataUrl.split(',')[1];
-     preview.src = dataUrl;
-     preview.style.display = 'block';
-     go.disabled = false;
-     picklabel.textContent = '写真を変更する';
-     URL.revokeObjectURL(url);
-    };
-    img.onerror = function () { picklabel.textContent = '写真を選ぶ'; alert('画像を読み込めませんでした'); };
-    img.src = url;
-   });
+function resetPick() { picklabel.textContent = imageData ? "写真を変更する" : "写真を選ぶ"; }
 
-   go.addEventListener('click', async function () {
-    if (!imageData) return;
-    go.disabled = true;
-    result.style.display = 'block';
-    result.innerHTML = '<div class="loading"><div class="spin"></div><div>解析中...</div></div>';
-    try {
-     var res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: imageData }) });
-     var text = await res.text();
-     var data;
-     try { data = JSON.parse(text); } catch (e) { throw new Error('サーバー応答エラーが発生しました。もう一度お試しください'); }
-     if (data.error) throw new Error(data.error);
-     var h = '<div class="kcal-wrap"><div class="kcal">' + data.total_kcal + '</div><div class="kcal-unit">kcal</div></div>';
-     h += '<div class="macros">';
-     h += '<div class="macro"><div class="v">' + data.protein_g + 'g</div><div class="n">タンパク質</div></div>';
-     h += '<div class="macro"><div class="v">' + data.fat_g + 'g</div><div class="n">脂質</div></div>';
-     h += '<div class="macro"><div class="v">' + data.carbs_g + 'g</div><div class="n">炭水化物</div></div>';
-     h += '</div>';
-     h += '<div class="section">検出された食品</div>';
-     data.items.forEach(function (it) {
-      h += '<div class="food"><div><div class="fn">' + it.name + '</div><div class="fa">' + it.amount + '</div></div><div class="fk">' + it.kcal + ' kcal</div></div>';
-     });
-     result.innerHTML = h;
-    } catch (err) {
-     result.innerHTML = '<div class="err">' + err.message + '</div>';
+function drawToData(src, width, height) {
+  var max = 1280;
+  var w = width, h = height;
+  if (w > h && w > max) { h = Math.round(h * max / w); w = max; }
+  else if (h >= w && h > max) { w = Math.round(w * max / h); h = max; }
+  var canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  var ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(src, 0, 0, w, h);
+  var dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+  imageData = dataUrl.split(",")[1];
+  preview.src = dataUrl;
+  preview.style.display = "block";
+  go.disabled = false;
+  resetPick();
+}
+
+async function handleFile(f) {
+  picklabel.textContent = "読み込み中...";
+  go.disabled = true;
+  var unsupported = /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name || "");
+  try {
+    if (typeof createImageBitmap === "function") {
+      try {
+        var bitmap = await createImageBitmap(f);
+        drawToData(bitmap, bitmap.width, bitmap.height);
+        if (bitmap.close) bitmap.close();
+        return;
+      } catch (e) {}
     }
-    go.disabled = false;
-   });
-  </script>
- </body>
+    await new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () { try { drawToData(img, img.naturalWidth || img.width, img.naturalHeight || img.height); resolve(); } catch (e) { reject(e); } };
+        img.onerror = function () { reject(new Error("decode")); };
+        img.src = reader.result;
+      };
+      reader.onerror = function () { reject(new Error("read")); };
+      reader.readAsDataURL(f);
+    });
+  } catch (err) {
+    resetPick();
+    imageData = null;
+    go.disabled = true;
+    if (unsupported) {
+      alert("この写真の形式（HEIC/HEIFなど）は対応していません。iPhoneをお使いの場合は「設定→カメラ→フォーマット→互換性優先」に変更して撮り直すか、スクリーンショットを選んでください。");
+    } else {
+      alert("画像を読み込めませんでした。別の写真でお試しください。");
+    }
+  }
+}
+
+fileEl.addEventListener("change", function () {
+  var f = fileEl.files[0];
+  if (!f) return;
+  if (!/^image\//i.test(f.type) && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name || "")) {
+    alert("画像ファイルを選んでください。");
+    return;
+  }
+  handleFile(f);
+});
+
+go.addEventListener("click", async function () {
+  if (!imageData) return;
+  go.disabled = true;
+  result.style.display = "block";
+  result.innerHTML = '<div class="loading"><div class="spin"></div><div>解析中...</div></div>';
+  try {
+    var res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: imageData }) });
+    var text = await res.text();
+    var data;
+    try { data = JSON.parse(text); } catch (e) { throw new Error("サーバー応答エラーが発生しました。もう一度お試しください"); }
+    if (data.error) throw new Error(data.error);
+    var h = '<div class="kcal-wrap"><div class="kcal">' + data.total_kcal + '</div><div class="kcal-unit">kcal</div></div>';
+    h += '<div class="macros">';
+    h += '<div class="macro"><div class="v">' + data.protein_g + 'g</div><div class="n">タンパク質</div></div>';
+    h += '<div class="macro"><div class="v">' + data.fat_g + 'g</div><div class="n">脂質</div></div>';
+    h += '<div class="macro"><div class="v">' + data.carbs_g + 'g</div><div class="n">炭水化物</div></div>';
+    h += '</div>';
+    h += '<div class="section">検出された食品</div>';
+    data.items.forEach(function (it) {
+      h += '<div class="food"><div><div class="fn">' + it.name + '</div><div class="fa">' + it.amount + '</div></div><div class="fk">' + it.kcal + ' kcal</div></div>';
+    });
+    result.innerHTML = h;
+  } catch (err) {
+    result.innerHTML = '<div class="err">' + err.message + '</div>';
+  }
+  go.disabled = false;
+});
+</script>
+</body>
 </html>
