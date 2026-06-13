@@ -120,7 +120,7 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
   </div>
 
   <div class="card" id="photoCard">
-    <div id="photoLabel" style="font-weight:600;margin-bottom:10px">パッケージの写真を選んでください（複数可）</div>
+    <div id="nameSearchBox" style="margin-bottom:14px"><div style="font-weight:600;margin-bottom:8px">🔎 商品名で検索（コンビニ・市販品）</div><div style="display:flex;gap:8px"><input id="nameInput" type="text" inputmode="search" placeholder="例: ファミマ ねぎ塩カニカマ" style="flex:1;min-width:0;padding:12px;border:1px solid #d1d5db;border-radius:12px;font-size:15px"><button class="btn" id="goName" style="width:auto;padding:0 16px;margin:0;white-space:nowrap">検索</button></div><div class="muted" style="font-size:12px;margin-top:6px">公式の栄養成分を優先して取得します。見つからない時は写真でお試しください。</div><div id="nameResult"></div></div><div style="text-align:center;color:#9ca3af;font-size:12px;margin:6px 0 14px">― または写真で ―</div><div id="photoLabel" style="font-weight:600;margin-bottom:10px">パッケージの写真を選んでください（複数可）</div>
     <label class="drop" id="picklabel" for="file">📷 写真を選ぶ</label>
     <input type="file" id="file" accept="image/*" multiple style="display:none">
     <div class="thumbs" id="thumbs"></div>
@@ -384,6 +384,30 @@ function workoutMinByDay(){var wo=getWorkout();var o={};for(var d in wo){var s=0
 function renderWorkout(){var wo=getWorkout();var dates=Object.keys(wo).sort().reverse();var html="";dates.forEach(function(d){(wo[d]||[]).slice().reverse().forEach(function(e){html+='<div class="item"><span>'+d+' '+e.name+'</span><span>'+(e.min?e.min+'分':'')+(e.kcal?' / '+e.kcal+'kcal':'')+'</span></div>';});});$("woList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';var mbd=workoutMinByDay();drawBars("woChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#16a34a");}
 function calByDay(){var log=getLog();var o={};for(var d in log){var s=0;(log[d]||[]).forEach(function(e){s+=num(e.kcal);});o[d]=s;}return o;}
 function renderGraphs(){var cbd=calByDay();var tg=getTargets();drawBars("calChart",lastNDates(30).map(function(d){return {x:d,y:cbd[d]||0};}),"#16a34a",num(tg.kcal));var w=getWeight();drawLine("gWtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#2563eb");var mbd=workoutMinByDay();drawBars("gWoChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#f59e0b");}
+function searchByName(){
+  var q=($("nameInput").value||"").trim();
+  if(!q){$("nameResult").innerHTML='<div class="err">商品名を入力してください</div>';return;}
+  $("goName").disabled=true;
+  $("nameResult").innerHTML='<div class="hint"><span class="spin"></span>検索中…</div>';
+  callAnalyze({mode:"package",name:q})
+  .then(function(x){
+    if(x.ok && x.j && x.j.items && x.j.items.length){
+      var html="";
+      x.j.items.forEach(function(it){
+        html+=renderResultItem(it);
+        addToday(it);
+      });
+      html='<div class="okbar">✅ 今日の食事に追加しました（「📅 過去の記録」で振り返れます）</div>'+html;
+      $("nameResult").innerHTML=html;
+      $("nameInput").value="";
+    } else {
+      var msg=(x.j && x.j.error) ? x.j.error : "見つかりませんでした。商品名を正確に入力するか、写真でお試しください。";
+      $("nameResult").innerHTML='<div class="err">'+msg+'</div>';
+    }
+  })
+  .catch(function(e){$("nameResult").innerHTML='<div class="err">検索に失敗しました: '+(e&&e.message||"通信エラー")+'</div>';})
+  .then(function(){$("goName").disabled=false;});
+}
 function wire(){
   deviceId();
   window.__showPage=function(p){var map={meal:"pageMeal",weight:"pageWeight",workout:"pageWorkout",graph:"pageGraph"};["pageMeal","pageWeight","pageWorkout","pageGraph"].forEach(function(id){$(id).classList.toggle("on",map[p]===id);});["navMeal","navWeight","navWorkout","navGraph"].forEach(function(id){$(id).classList.remove("on");});$({meal:"navMeal",weight:"navWeight",workout:"navWorkout",graph:"navGraph"}[p]).classList.add("on");if(p==="weight")renderWeight();if(p==="workout")renderWorkout();if(p==="graph")renderGraphs();};
@@ -418,6 +442,8 @@ function wire(){
     var fs=[].slice.call(e.target.files||[]);
     Promise.all(fs.map(fileToData)).then(function(ds){picked=picked.concat(ds);renderThumbs()});
   });
+  $("goName").addEventListener("click",searchByName);
+  $("nameInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();searchByName();}});
   $("goPhoto").addEventListener("click",analyzePhotos);
   if(!$("ingredients").children.length){addIngredientRow();addIngredientRow();}
   $("addRow").addEventListener("click",function(){addIngredientRow()});
