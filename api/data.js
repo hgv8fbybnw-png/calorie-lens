@@ -3,10 +3,8 @@ import { put, list } from '@vercel/blob';
 export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 
 // =============================================================
-// カロリーレンズ ユーザーデータ同期API
+// カロリーレンズ ユーザーデータ同期API（Privateストア）
 // 同期コード(syncCode)に紐づけて目標(targets)と記録(log)を保存/取得。
-// action = 'load' : { code } -> { found, targets, log }
-// action = 'save' : { code, targets, log } -> { ok }
 // =============================================================
 
 const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
@@ -23,8 +21,14 @@ async function readUser(code) {
   if (!res || !res.blobs || !res.blobs.length) return null;
   var blob = res.blobs[0];
   if (blob.pathname !== prefix) return null;
-  var r = await fetch(blob.url, { cache: 'no-store' });
-  if (!r.ok) return null;
+  // Privateストアの読み取り: ダウンロードURL or トークン付きで取得
+  var url = blob.downloadUrl || blob.url;
+  var r = await fetch(url, { cache: 'no-store', headers: { Authorization: 'Bearer ' + TOKEN } });
+  if (!r.ok) {
+    // トークン無しでも試す（公開時のフォールバック）
+    r = await fetch(blob.url, { cache: 'no-store' });
+    if (!r.ok) return null;
+  }
   try { return await r.json(); } catch (e) { return null; }
 }
 
@@ -48,7 +52,7 @@ export default async function handler(req, res) {
     if (action === 'save') {
       var payload = { targets: body.targets || {}, log: body.log || {}, updatedAt: Date.now() };
       await put(pathFor(code), JSON.stringify(payload), {
-        access: 'public',
+        access: 'private',
         contentType: 'application/json',
         addRandomSuffix: false,
         allowOverwrite: true,
