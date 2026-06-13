@@ -3,31 +3,30 @@ import { put, list } from '@vercel/blob';
 export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 
 // =============================================================
-// カロリーレンズ ユーザーデータ同期API
-// 同期コード(syncCode)に紐づけて、目標(targets)と記録(log)を
-// サーバー(Vercel Blob)に保存・取得する。複数端末で共有可能。
-// action = 'load' : { code } -> { targets, log }
-// action = 'save' : { code, targets, log } -> { ok: true }
-// 認証情報は扱わない。コードは英数字のみに正規化して安全に扱う。
+// カロリーレンズ ユーザーデータ同期API（Privateストア対応）
+// 同期コード(syncCode)に紐づけて目標(targets)と記録(log)を保存/取得。
+// Privateストアのため、読み取りはトークン付きでblob URLにアクセスする。
 // =============================================================
 
+const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+
 function sanitizeCode(code) {
-  var s = String(code || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64);
-  return s;
+  return String(code || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64);
 }
 
-function pathFor(code) {
-  return 'users/' + code + '.json';
-}
+function pathFor(code) { return 'users/' + code + '.json'; }
 
 async function readUser(code) {
-  // listでprefix一致を探し、存在すればそのURLからfetchして読む
   var prefix = pathFor(code);
-  var res = await list({ prefix: prefix, limit: 1 });
+  var res = await list({ prefix: prefix, limit: 1, token: TOKEN });
   if (!res || !res.blobs || !res.blobs.length) return null;
   var blob = res.blobs[0];
   if (blob.pathname !== prefix) return null;
-  var r = await fetch(blob.url, { cache: 'no-store' });
+  // Privateストアの読み取り: トークンをAuthorizationヘッダに付与
+  var r = await fetch(blob.url, {
+    cache: 'no-store',
+    headers: { Authorization: 'Bearer ' + TOKEN }
+  });
   if (!r.ok) return null;
   try { return await r.json(); } catch (e) { return null; }
 }
@@ -50,17 +49,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ found: true, targets: data.targets || {}, log: data.log || {} });
     }
     if (action === 'save') {
-      var payload = {
-        targets: body.targets || {},
-        log: body.log || {},
-        updatedAt: Date.now()
-      };
-      var json = JSON.stringify(payload);
-      await put(pathFor(code), json, {
-        access: 'public',
+      var payload = { targets: body.targets || {}, log: body.log || {}, updatedAt: Date.now() };
+      await put(pathFor(code), JSON.stringify(payload), {
+        access: 'private',
         contentType: 'application/json',
         addRandomSuffix: false,
-        allowOverwrite: true
+        allowOverwrite: true,
+        token: TOKEN
       });
       return res.status(200).json({ ok: true });
     }
