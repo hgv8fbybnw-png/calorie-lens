@@ -389,14 +389,7 @@ function searchByName(){
   if(!q){$("nameResult").innerHTML='<div class="err">商品名を入力してください</div>';return;}
   $("goName").disabled=true;
   $("nameResult").innerHTML='<div class="hint"><span class="spin"></span>検索中…</div>';
-  function attempt(n){
-    return callAnalyze({mode:"package",name:q}).then(function(x){
-      if(x.ok && x.j && x.j.items && x.j.items.length){return x;}
-      if(n<2){return attempt(n+1);}
-      return x;
-    });
-  }
-  attempt(1).then(function(x){
+  callAnalyze({mode:"package",name:q}).then(function(x){
     if(x.ok && x.j && x.j.items && x.j.items.length){
       var html="";
       x.j.items.forEach(function(it){
@@ -407,7 +400,10 @@ function searchByName(){
       $("nameResult").innerHTML=html;
       $("nameInput").value="";
     } else {
-      var msg=(x.j && x.j.error) ? x.j.error : "見つかりませんでした。商品名を正確に入力するか、写真でお試しください。";
+      var raw=(x.j && x.j.error) ? String(x.j.error) : "";
+      var msg;
+      if(/quota|rate|exceeded|429/i.test(raw)){ msg="今は混み合っています（無料の利用上限）。1分ほど待って、もう一度お試しください。"; }
+      else { msg = raw || "見つかりませんでした。商品名を正確に入力するか、写真でお試しください。"; }
       $("nameResult").innerHTML='<div class="err">'+msg+'</div>';
     }
   })
