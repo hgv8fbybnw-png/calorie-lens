@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     if (action === 'save') {
       var payload = { targets: body.targets || {}, log: body.log || {}, updatedAt: Date.now() };
       await put(pathFor(code), JSON.stringify(payload), {
-        access: 'private',
+        access: 'public',
         contentType: 'application/json',
         addRandomSuffix: false,
         allowOverwrite: true,
