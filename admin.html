@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カロリーレンズ 管理</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#0f172a;color:#e2e8f0}
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+h1{font-size:22px;color:#22c55e;margin:0 0 4px}.sub{color:#94a3b8;font-size:13px;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:#1e293b;border-radius:14px;padding:16px}.kpi .l{font-size:12px;color:#94a3b8}.kpi .v{font-size:26px;font-weight:800;color:#fff;margin-top:4px}
+table{width:100%;border-collapse:collapse;background:#1e293b;border-radius:14px;overflow:hidden}
+th,td{text-align:left;padding:10px 12px;font-size:13px;border-bottom:1px solid #334155}th{background:#0b1220;color:#94a3b8;font-weight:600}
+tr:hover td{background:#243044}.code{font-weight:700;color:#22c55e}
+.bar{height:6px;background:#334155;border-radius:99px;overflow:hidden;margin-top:4px}.bar>i{display:block;height:100%;background:#22c55e}
+.btn{background:#22c55e;color:#06281a;border:none;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer}
+.muted{color:#94a3b8}.detail{background:#0b1220;border-radius:12px;padding:14px;margin-top:14px;display:none}.detail.show{display:block}
+svg.chart{width:100%;height:140px;display:block}.chartGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}@media(max-width:700px){.chartGrid{grid-template-columns:1fr}}
+.cc{background:#1e293b;border-radius:12px;padding:12px}.cc h4{margin:0 0 8px;font-size:13px;color:#cbd5e1}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>カロリーレンズ 管理ダッシュボード</h1>
+<div class="sub">全ユーザー（合言葉）の摂取カロリー・体重・トレーニングを管理します。<button class="btn" id="reload" style="margin-left:8px">再読込</button></div>
+<div class="cards" id="kpis"></div>
+<table><thead><tr><th>ユーザー(合言葉)</th><th>今日のkcal</th><th>目標</th><th>最新体重</th><th>トレ(直近7日 分)</th><th>記録日数</th><th>最終更新</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+<div class="detail" id="detail"></div>
+</div>
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+function num(v){v=parseFloat(v);return isFinite(v)?v:0}
+function todayStr(){var d=new Date();var m=("0"+(d.getMonth()+1)).slice(-2);var dd=("0"+d.getDate()).slice(-2);return d.getFullYear()+"-"+m+"-"+dd;}
+function lastNDates(nn){var arr=[];var d=new Date();for(var i=nn-1;i>=0;i--){var x=new Date(d.getTime()-i*86400000);var m=("0"+(x.getMonth()+1)).slice(-2);var dd=("0"+x.getDate()).slice(-2);arr.push(x.getFullYear()+"-"+m+"-"+dd);}return arr;}
+function calByDay(log){var o={};for(var d in log){var s=0;(log[d]||[]).forEach(function(e){s+=num(e.kcal)});o[d]=s;}return o;}
+function woMinByDay(wo){var o={};for(var d in wo){var s=0;(wo[d]||[]).forEach(function(e){s+=num(e.min)});o[d]=s;}return o;}
+function latestWeight(w){var ks=Object.keys(w).sort();return ks.length?w[ks[ks.length-1]]:null;}
+function sum7(map){var ds=lastNDates(7);var s=0;ds.forEach(function(d){s+=num(map[d]||0)});return s;}
+function svgEl(t,at){var e=document.createElementNS("http://www.w3.org/2000/svg",t);for(var k in at)e.setAttribute(k,at[k]);return e;}
+function drawBars(el,data,color,goal){var w=el.clientWidth||300,h=140,pad=22;el.setAttribute("viewBox","0 0 "+w+" "+h);el.innerHTML="";var ys=data.map(function(d){return d.y||0});var mx=Math.max.apply(null,ys.concat([goal||0,1]));var step=(w-2*pad)/data.length;var bw=step*0.7;var Y=function(v){return h-pad-(h-2*pad)*(v/mx)};el.appendChild(svgEl("line",{x1:pad,y1:h-pad,x2:w-pad,y2:h-pad,stroke:"#334155","stroke-width":1}));data.forEach(function(d,i){var v=d.y||0;if(v<=0)return;var x=pad+step*i+(step-bw)/2;var y=Y(v);el.appendChild(svgEl("rect",{x:x,y:y,width:bw,height:h-pad-y,fill:color,rx:2}))});if(goal){var gy=Y(goal);el.appendChild(svgEl("line",{x1:pad,y1:gy,x2:w-pad,y2:gy,stroke:"#ef4444","stroke-width":1.5,"stroke-dasharray":"4 3"}))}var t=svgEl("text",{x:pad,y:12,fill:"#64748b","font-size":"10"});t.textContent=Math.round(mx);el.appendChild(t);}
+function drawLine(el,data,color){var w=el.clientWidth||300,h=140,pad=22;el.setAttribute("viewBox","0 0 "+w+" "+h);el.innerHTML="";var pts=data.filter(function(d){return d.y!=null});if(!pts.length){var tx=svgEl("text",{x:w/2,y:h/2,"text-anchor":"middle",fill:"#64748b","font-size":"12"});tx.textContent="データなし";el.appendChild(tx);return;}var ys=pts.map(function(d){return d.y});var mn=Math.min.apply(null,ys),mx=Math.max.apply(null,ys);if(mn===mx){mn-=1;mx+=1}var n2=data.length;var X=function(i){return pad+(w-2*pad)*(n2<=1?0.5:i/(n2-1))};var Y=function(v){return h-pad-(h-2*pad)*((v-mn)/(mx-mn))};var dstr="",started=false;data.forEach(function(d,i){if(d.y==null)return;dstr+=(started?" L":"M")+X(i)+" "+Y(d.y);started=true});el.appendChild(svgEl("path",{d:dstr,fill:"none",stroke:color,"stroke-width":2.5}));data.forEach(function(d,i){if(d.y==null)return;el.appendChild(svgEl("circle",{cx:X(i),cy:Y(d.y),r:3,fill:color}))});}
+var USERS=[];
+function fmtDate(ts){if(!ts)return "—";var d=new Date(ts);return (d.getMonth()+1)+"/"+d.getDate()+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
+function load(){
+  $("rows").innerHTML='<tr><td colspan="8" class="muted">読み込み中…</td></tr>';
+  fetch("/api/admin",{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){
+    USERS=(j&&j.users)||[];render();
+  }).catch(function(e){$("rows").innerHTML='<tr><td colspan="8" class="muted">読み込み失敗: '+(e.message||"")+'</td></tr>';});
+}
+function render(){
+  var today=todayStr();
+  var totalKcal=0,activeToday=0,totalUsers=USERS.length;
+  var rows="";
+  USERS.forEach(function(u,idx){
+    var cbd=calByDay(u.log||{});var tKcal=cbd[today]||0;totalKcal+=tKcal;if(tKcal>0)activeToday++;
+    var goal=(u.targets&&u.targets.kcal)||0;
+    var lw=latestWeight(u.weight||{});
+    var wmin=sum7(woMinByDay(u.workout||{}));
+    var days=Object.keys(u.log||{}).length;
+    var pctv=goal?Math.min(100,Math.round(tKcal/goal*100)):0;
+    rows+='<tr><td class="code">'+u.code+'</td>'+
+      '<td>'+Math.round(tKcal)+' kcal<div class="bar"><i style="width:'+pctv+'%"></i></div></td>'+
+      '<td>'+(goal||"—")+'</td>'+
+      '<td>'+(lw!=null?lw+" kg":"—")+'</td>'+
+      '<td>'+wmin+' 分</td>'+
+      '<td>'+days+'</td>'+
+      '<td class="muted">'+fmtDate(u.updatedAt)+'</td>'+
+      '<td><button class="btn" data-i="'+idx+'">詳細</button></td></tr>';
+  });
+  $("rows").innerHTML=rows||'<tr><td colspan="8" class="muted">ユーザーがいません</td></tr>';
+  $("kpis").innerHTML='<div class="kpi"><div class="l">総ユーザー数</div><div class="v">'+totalUsers+'</div></div>'+
+    '<div class="kpi"><div class="l">本日記録のあるユーザー</div><div class="v">'+activeToday+'</div></div>'+
+    '<div class="kpi"><div class="l">本日の総摂取kcal</div><div class="v">'+Math.round(totalKcal)+'</div></div>'+
+    '<div class="kpi"><div class="l">平均kcal/人(本日)</div><div class="v">'+(totalUsers?Math.round(totalKcal/totalUsers):0)+'</div></div>';
+  var btns=$("rows").querySelectorAll("button[data-i]");
+  for(var i=0;i<btns.length;i++){btns[i].addEventListener("click",function(){showDetail(num(this.getAttribute("data-i")))})}
+}
+function showDetail(i){
+  var u=USERS[i];if(!u)return;
+  var d=$("detail");d.classList.add("show");
+  d.innerHTML='<h3 style="margin:0 0 10px;color:#22c55e">'+u.code+' の詳細</h3>'+
+    '<div class="chartGrid">'+
+    '<div class="cc"><h4>摂取kcal(30日)</h4><svg class="chart" id="dCal"></svg></div>'+
+    '<div class="cc"><h4>体重(30日)</h4><svg class="chart" id="dWt"></svg></div>'+
+    '<div class="cc"><h4>トレ分(30日)</h4><svg class="chart" id="dWo"></svg></div>'+
+    '</div>';
+  var cbd=calByDay(u.log||{});var goal=(u.targets&&u.targets.kcal)||0;
+  drawBars($("dCal"),lastNDates(30).map(function(x){return {x:x,y:cbd[x]||0}}),"#22c55e",goal);
+  var w=u.weight||{};drawLine($("dWt"),lastNDates(30).map(function(x){return {x:x,y:(x in w)?w[x]:null}}),"#38bdf8");
+  var mbd=woMinByDay(u.workout||{});drawBars($("dWo"),lastNDates(30).map(function(x){return {x:x,y:mbd[x]||0}}),"#f59e0b");
+  d.scrollIntoView({behavior:"smooth"});
+}
+$("reload").addEventListener("click",load);
+load();
+})();
+</script>
+</body>
+</html>
