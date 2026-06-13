@@ -135,6 +135,26 @@ var lastItems = null; // 直近の計算結果（記録追加用）
 // ---------- localStorage: 目標と記録 ----------
 var TKEY = "cl_targets_v1";
 var LKEY = "cl_log_v1";
+var DKEY = "cl_device_id_v1";
+function getDeviceId(){
+  var id = "";
+  try { id = localStorage.getItem(DKEY) || ""; } catch(e){}
+  if(!id){
+    var rnd = (Date.now().toString(36) + Math.random().toString(36).slice(2,10));
+    id = "device-" + rnd;
+    try { localStorage.setItem(DKEY, id); } catch(e){}
+  }
+  return id;
+}
+function uploadImageToStore(image){
+  try {
+    return fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId: getDeviceId(), image: image, mode: mode })
+    }).then(function(r){ return r.json(); }).catch(function(){ return null; });
+  } catch(e) { return Promise.resolve(null); }
+}
 function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
 function loadTargets(){ try{ return JSON.parse(localStorage.getItem(TKEY))||{}; }catch(e){ return {}; } }
 function saveTargets(t){ localStorage.setItem(TKEY, JSON.stringify(t)); }
@@ -447,6 +467,7 @@ for (var i = 0; i < images.length; i++) {
 result.innerHTML = '<div class="loading"><div class="spin"></div><div>' + (i+1) + ' / ' + images.length + ' 枚目を解析中...</div></div>';
 var items = await analyzeImage(images[i], mode === "package");
 all = all.concat(items);
+        try { await uploadImageToStore(images[i]); } catch (e) {}
 }
 if (!all.length) throw new Error("食品を認識できませんでした。別の写真でお試しください");
 renderResult(all);
