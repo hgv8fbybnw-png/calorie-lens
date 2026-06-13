@@ -39,7 +39,7 @@ h1{font-size:22px;color:#16a34a;margin:8px 0 16px;font-weight:800}
 .tabs button.on{border-color:#16a34a;color:#16a34a;background:#f0fdf4}
 label.fld{display:block;font-size:13px;font-weight:600;margin:10px 0 4px;color:#374151}
 input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #d1d5db;border-radius:12px;font-size:16px}
-.drop{border:2px dashed #86efac;border-radius:14px;padding:26px;text-align:center;color:#16a34a;font-weight:700;cursor:pointer;background:#f0fdf4}
+.drop{display:block;border:2px dashed #86efac;border-radius:14px;padding:26px;text-align:center;color:#16a34a;font-weight:700;cursor:pointer;background:#f0fdf4}
 .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px}
 .btn{width:100%;padding:15px;border:none;border-radius:14px;background:#16a34a;color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:14px}
@@ -64,7 +64,7 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 .histDay .s{font-size:12px;color:#6b7280;margin-top:2px}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #d1fae5;border-top-color:#16a34a;border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
-</style>
+.chartCard{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}.chartCard h3{margin:0 0 10px;font-size:15px;color:#374151}svg.chart{display:block;width:100%;height:150px}.legend{font-size:11px;color:#6b7280;margin-top:6px}.navTabs{display:flex;gap:6px;margin:14px 0 4px}.navTabs button{flex:1;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 0;font-size:13px;font-weight:700;color:#374151;cursor:pointer}.navTabs button.on{background:#16a34a;color:#fff;border-color:#16a34a}.miniInput{display:flex;gap:8px;align-items:flex-end}.miniInput .col{flex:1}.miniInput button{width:auto;padding:13px 18px;margin-top:0;white-space:nowrap}.list .item{display:flex;justify-content:space-between;border-top:1px solid #eee;padding:8px 0;font-size:13px}.wtNow{font-size:30px;font-weight:800;color:#16a34a}.page{display:none}.page.on{display:block}</style>
 </head>
 <body>
 
@@ -106,7 +106,14 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
     </div>
   </div>
 
-  <div class="tabs">
+  <div class="navTabs">
+  <button id="navMeal" class="on">🍽 食事</button>
+  <button id="navWeight">⚖️ 体重</button>
+  <button id="navWorkout">🏋️ トレ</button>
+  <button id="navGraph">📈 グラフ</button>
+</div>
+<div class="page on" id="pageMeal">
+<div class="tabs">
     <button id="tabPkg" class="on">パッケージ商品</button>
     <button id="tabEat">外食</button>
     <button id="tabCook">自炊</button>
@@ -130,6 +137,41 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
     <div class="result" id="resultHome"></div>
   </div>
 </div>
+
+<div class="page" id="pageWeight">
+  <div class="card">
+    <div style="font-weight:600;margin-bottom:4px">現在の体重</div>
+    <div class="wtNow" id="wtNow">— kg</div>
+    <div class="miniInput" style="margin-top:12px">
+      <div class="col"><label class="fld">今日の体重 (kg)</label><input type="number" id="wtInput" step="0.1" inputmode="decimal" placeholder="例: 62.5"></div>
+      <button class="btn" id="wtSave" style="margin-top:0">記録</button>
+    </div>
+  </div>
+  <div class="chartCard"><h3>体重の推移</h3><svg class="chart" id="wtChart"></svg><div class="legend">直近30日</div></div>
+  <div class="card"><div style="font-weight:600;margin-bottom:4px">体重ログ</div><div class="list" id="wtList"></div></div>
+</div>
+
+<div class="page" id="pageWorkout">
+  <div class="card">
+    <div style="font-weight:600;margin-bottom:8px">トレーニングを記録</div>
+    <label class="fld">種目・内容</label>
+    <input type="text" id="woName" placeholder="例: ベンチプレス / ランニング">
+    <div class="miniInput" style="margin-top:8px">
+      <div class="col"><label class="fld">時間(分)</label><input type="number" id="woMin" inputmode="numeric" placeholder="例: 30"></div>
+      <div class="col"><label class="fld">消費kcal(任意)</label><input type="number" id="woKcal" inputmode="numeric" placeholder="例: 250"></div>
+    </div>
+    <button class="btn" id="woSave">記録する</button>
+  </div>
+  <div class="chartCard"><h3>トレーニング時間（分／日）</h3><svg class="chart" id="woChart"></svg><div class="legend">直近30日</div></div>
+  <div class="card"><div style="font-weight:600;margin-bottom:4px">トレーニングログ</div><div class="list" id="woList"></div></div>
+</div>
+
+<div class="page" id="pageGraph">
+  <div class="chartCard"><h3>摂取カロリー（kcal／日）</h3><svg class="chart" id="calChart"></svg><div class="legend">直近30日・点線は目標</div></div>
+  <div class="chartCard"><h3>体重(kg)</h3><svg class="chart" id="gWtChart"></svg></div>
+  <div class="chartCard"><h3>トレーニング時間(分)</h3><svg class="chart" id="gWoChart"></svg></div>
+</div>
+
 
 <div class="modal" id="settings">
   <div class="sheet">
@@ -166,7 +208,7 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 <script>
 (function(){
 "use strict";
-var LS={dev:"cl_device_id_v1",sync:"cl_sync_code_v1",log:"cl_log_v1",tg:"cl_targets_v1"};
+var LS={dev:"cl_device_id_v1",sync:"cl_sync_code_v1",log:"cl_log_v1",tg:"cl_targets_v1",wt:"cl_weight_v1",wo:"cl_workout_v1"};
 var $=function(id){return document.getElementById(id)};
 function getJSON(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function setJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -177,6 +219,10 @@ function getTargets(){return getJSON(LS.tg,{kcal:2000,protein_g:120,fat_g:55,car
 function setTargets(t){setJSON(LS.tg,t)}
 function getLog(){return getJSON(LS.log,{})}
 function setLog(l){setJSON(LS.log,l)}
+function getWeight(){return getJSON(LS.wt,{})}
+function setWeight(w){setJSON(LS.wt,w)}
+function getWorkout(){return getJSON(LS.wo,{})}
+function setWorkout(w){setJSON(LS.wo,w)}
 function todayStr(){var d=new Date();var m=("0"+(d.getMonth()+1)).slice(-2);var day=("0"+d.getDate()).slice(-2);return d.getFullYear()+"-"+m+"-"+day}
 function num(v){v=parseFloat(v);return isFinite(v)?v:0}
 function r1(v){return Math.round(num(v))}
@@ -185,7 +231,7 @@ function api(action,extra){
   return fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()});
 }
 var saveTimer=null;
-function pushToServer(){if(!getCode())return Promise.resolve();return api("save",{targets:getTargets(),log:getLog()}).catch(function(){})}
+function pushToServer(){if(!getCode())return Promise.resolve();return api("save",{targets:getTargets(),log:getLog(),weight:getWeight(),workout:getWorkout()}).catch(function(){})}
 function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(pushToServer,800)}
 function mergeLog(server){
   var local=getLog();var out={};var days={};var k;
@@ -197,10 +243,11 @@ function mergeLog(server){
   }
   return out;
 }
+function mergeWeight(server){var local=getWeight();var out={};var k;for(k in local)out[k]=local[k];for(k in server){if(!(k in out))out[k]=server[k];}return out;}
 function pullFromServer(){
   if(!getCode())return Promise.resolve(false);
   return api("load",{}).then(function(j){
-    if(j&&j.found){if(j.targets)setTargets(j.targets);if(j.log)setLog(mergeLog(j.log));}
+    if(j&&j.found){if(j.targets)setTargets(j.targets);if(j.log)setLog(mergeLog(j.log));if(j.weight)setWeight(mergeWeight(j.weight));if(j.workout)setWorkout(mergeLog(j.workout));}
     return true;
   }).catch(function(){return false});
 }
@@ -317,7 +364,7 @@ function startWithName(){
   var c=$("gateName").value.trim();
   if(c.length<2){$("gateStatus").textContent="2文字以上で入力してください";return}
   setCode(c);$("gateStatus").innerHTML='<span class="spin"></span>あなたの記録を読み込み中…';
-  pullFromServer().then(function(){renderDash();showApp()});
+  pullFromServer().then(function(){renderDash();renderWeight();renderWorkout();renderGraphs();showApp()});
 }
 function setupPwa(){
   try{
@@ -328,8 +375,33 @@ function setupPwa(){
   }catch(e){}
 }
 
+
+// charts
+function chartDims(id){var el=$(id);var w=el.clientWidth||320;var h=el.clientHeight||150;return {el:el,w:w,h:h,pad:24};}
+function clearSvg(el,w,h){el.setAttribute("viewBox","0 0 "+w+" "+h);el.innerHTML="";}
+function svgEl(tag,attrs){var e=document.createElementNS("http://www.w3.org/2000/svg",tag);for(var k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function drawLine(id,data,color){var D=chartDims(id);var w=D.w,h=D.h,pad=D.pad;clearSvg(D.el,w,h);var pts=data.filter(function(d){return d.y!=null;});if(!pts.length){var tx=svgEl("text",{x:w/2,y:h/2,"text-anchor":"middle",fill:"#9ca3af","font-size":"12"});tx.textContent="データなし";D.el.appendChild(tx);return;}var ys=pts.map(function(d){return d.y;});var mn=Math.min.apply(null,ys),mx=Math.max.apply(null,ys);if(mn===mx){mn-=1;mx+=1;}var n2=data.length;var X=function(i){return pad+(w-2*pad)*(n2<=1?0.5:i/(n2-1));};var Y=function(v){return h-pad-(h-2*pad)*((v-mn)/(mx-mn));};D.el.appendChild(svgEl("line",{x1:pad,y1:h-pad,x2:w-pad,y2:h-pad,stroke:"#e5e7eb","stroke-width":1}));var dstr="";var started=false;data.forEach(function(d,i){if(d.y==null)return;dstr+=(started?" L":"M")+X(i)+" "+Y(d.y);started=true;});D.el.appendChild(svgEl("path",{d:dstr,fill:"none",stroke:color,"stroke-width":2.5,"stroke-linejoin":"round","stroke-linecap":"round"}));data.forEach(function(d,i){if(d.y==null)return;D.el.appendChild(svgEl("circle",{cx:X(i),cy:Y(d.y),r:3,fill:color}));});var t1=svgEl("text",{x:pad,y:14,fill:"#9ca3af","font-size":"10"});t1.textContent=mx;D.el.appendChild(t1);var t2=svgEl("text",{x:pad,y:h-pad+12,fill:"#9ca3af","font-size":"10"});t2.textContent=mn;D.el.appendChild(t2);}
+function drawBars(id,data,color,goal){var D=chartDims(id);var w=D.w,h=D.h,pad=D.pad;clearSvg(D.el,w,h);var ys=data.map(function(d){return d.y||0;});var mx=Math.max.apply(null,ys.concat([goal||0,1]));var n2=data.length;var bw=(w-2*pad)/n2*0.7;var step=(w-2*pad)/n2;var Y=function(v){return h-pad-(h-2*pad)*(v/mx);};D.el.appendChild(svgEl("line",{x1:pad,y1:h-pad,x2:w-pad,y2:h-pad,stroke:"#e5e7eb","stroke-width":1}));data.forEach(function(d,i){var v=d.y||0;if(v<=0)return;var x=pad+step*i+(step-bw)/2;var y=Y(v);D.el.appendChild(svgEl("rect",{x:x,y:y,width:bw,height:(h-pad-y),fill:color,rx:2}));});if(goal){var gy=Y(goal);D.el.appendChild(svgEl("line",{x1:pad,y1:gy,x2:w-pad,y2:gy,stroke:"#ef4444","stroke-width":1.5,"stroke-dasharray":"4 3"}));}var t1=svgEl("text",{x:pad,y:14,fill:"#9ca3af","font-size":"10"});t1.textContent=Math.round(mx);D.el.appendChild(t1);}
+
+// weight/workout
+function lastNDates(nn){var arr=[];var d=new Date();for(var i=nn-1;i>=0;i--){var x=new Date(d.getTime()-i*86400000);var m=("0"+(x.getMonth()+1)).slice(-2);var day=("0"+x.getDate()).slice(-2);arr.push(x.getFullYear()+"-"+m+"-"+day);}return arr;}
+function saveWeight(){var v=num($("wtInput").value);if(!v){return;}var w=getWeight();w[todayStr()]=v;setWeight(w);scheduleSave();$("wtInput").value="";renderWeight();renderGraphs();}
+function renderWeight(){var w=getWeight();var dates=Object.keys(w).sort();var latest=dates.length?w[dates[dates.length-1]]:null;$("wtNow").textContent=latest!=null?(latest+" kg"):"— kg";var html="";dates.slice().reverse().forEach(function(d){html+='<div class="item"><span>'+d+'</span><span>'+w[d]+' kg</span></div>';});$("wtList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';drawLine("wtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#16a34a");}
+function saveWorkout(){var name=$("woName").value.trim();if(!name){return;}var min=num($("woMin").value);var kcal=num($("woKcal").value);var wo=getWorkout();var d=todayStr();if(!wo[d])wo[d]=[];wo[d].push({name:name,min:min,kcal:kcal,t:Date.now()});setWorkout(wo);scheduleSave();$("woName").value="";$("woMin").value="";$("woKcal").value="";renderWorkout();renderGraphs();}
+function workoutMinByDay(){var wo=getWorkout();var o={};for(var d in wo){var s=0;(wo[d]||[]).forEach(function(e){s+=num(e.min);});o[d]=s;}return o;}
+function renderWorkout(){var wo=getWorkout();var dates=Object.keys(wo).sort().reverse();var html="";dates.forEach(function(d){(wo[d]||[]).slice().reverse().forEach(function(e){html+='<div class="item"><span>'+d+' '+e.name+'</span><span>'+(e.min?e.min+'分':'')+(e.kcal?' / '+e.kcal+'kcal':'')+'</span></div>';});});$("woList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';var mbd=workoutMinByDay();drawBars("woChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#16a34a");}
+function calByDay(){var log=getLog();var o={};for(var d in log){var s=0;(log[d]||[]).forEach(function(e){s+=num(e.kcal);});o[d]=s;}return o;}
+function renderGraphs(){var cbd=calByDay();var tg=getTargets();drawBars("calChart",lastNDates(30).map(function(d){return {x:d,y:cbd[d]||0};}),"#16a34a",num(tg.kcal));var w=getWeight();drawLine("gWtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#2563eb");var mbd=workoutMinByDay();drawBars("gWoChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#f59e0b");}
 function wire(){
   deviceId();
+  window.__showPage=function(p){var map={meal:"pageMeal",weight:"pageWeight",workout:"pageWorkout",graph:"pageGraph"};["pageMeal","pageWeight","pageWorkout","pageGraph"].forEach(function(id){$(id).classList.toggle("on",map[p]===id);});["navMeal","navWeight","navWorkout","navGraph"].forEach(function(id){$(id).classList.remove("on");});$({meal:"navMeal",weight:"navWeight",workout:"navWorkout",graph:"navGraph"}[p]).classList.add("on");if(p==="weight")renderWeight();if(p==="workout")renderWorkout();if(p==="graph")renderGraphs();};
+  $("navMeal").addEventListener("click",function(){window.__showPage("meal")});
+  $("navWeight").addEventListener("click",function(){window.__showPage("weight")});
+  $("navWorkout").addEventListener("click",function(){window.__showPage("workout")});
+  $("navGraph").addEventListener("click",function(){window.__showPage("graph")});
+  $("wtSave").addEventListener("click",saveWeight);
+  $("woSave").addEventListener("click",saveWorkout);
+
   $("gateGo").addEventListener("click",startWithName);
   $("gateName").addEventListener("keydown",function(e){if(e.key==="Enter")startWithName()});
   $("gear").addEventListener("click",openSettings);
@@ -359,12 +431,12 @@ function wire(){
   $("addRow").addEventListener("click",function(){addIngredientRow()});
   $("goHome").addEventListener("click",analyzeHome);
   [["settings"],["history"]].forEach(function(x){var m=$(x[0]);m.addEventListener("click",function(e){if(e.target===m)m.classList.remove("show")})});
-  document.addEventListener("visibilitychange",function(){if(!document.hidden&&getCode()){pullFromServer().then(renderDash)}});
+  document.addEventListener("visibilitychange",function(){if(!document.hidden&&getCode()){pullFromServer().then(function(){renderDash();renderWeight();renderWorkout();renderGraphs();})}});
   window.addEventListener("focus",function(){if(getCode()){pullFromServer().then(renderDash)}});
 }
 function init(){
   wire();setupPwa();setMode("pkg");
-  if(getCode()){showApp();renderDash();pullFromServer().then(function(){renderDash()});}
+  if(getCode()){showApp();renderDash();renderWeight();renderWorkout();renderGraphs();pullFromServer().then(function(){renderDash();renderWeight();renderWorkout();renderGraphs();});}
   else{showGate();}
 }
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init)}else{init()}
