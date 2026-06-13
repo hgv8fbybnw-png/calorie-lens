@@ -389,8 +389,14 @@ function searchByName(){
   if(!q){$("nameResult").innerHTML='<div class="err">商品名を入力してください</div>';return;}
   $("goName").disabled=true;
   $("nameResult").innerHTML='<div class="hint"><span class="spin"></span>検索中…</div>';
-  callAnalyze({mode:"package",name:q})
-  .then(function(x){
+  function attempt(n){
+    return callAnalyze({mode:"package",name:q}).then(function(x){
+      if(x.ok && x.j && x.j.items && x.j.items.length){return x;}
+      if(n<2){return attempt(n+1);}
+      return x;
+    });
+  }
+  attempt(1).then(function(x){
     if(x.ok && x.j && x.j.items && x.j.items.length){
       var html="";
       x.j.items.forEach(function(it){
