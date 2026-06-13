@@ -115,7 +115,15 @@ return res.status(405).json({ error: 'POSTのみ対応しています' });
 }
 const body = req.body || {};
 const mode = body.mode || 'package';
-const image = body.image;
+let image = body.image;
+let imageMime = 'image/jpeg';
+if (typeof image === 'string') {
+  const mm = image.match(/^data:([^;,]+)[;,]/);
+  if (mm && mm[1]) imageMime = mm[1];
+  const ci = image.indexOf('base64,');
+  if (ci !== -1) image = image.slice(ci + 7);
+  image = image.replace(/\s/g, '');
+}
 const barcode = body.barcode;
 const ingredients = body.ingredients;
 
@@ -167,7 +175,7 @@ const prompt = (mode === 'eatout') ? IMAGE_EATOUT_PROMPT : IMAGE_PACKAGE_PROMPT;
 const defSource = (mode === 'eatout') ? 'estimate' : 'label';
 const text = await callGemini(apiKey, [
 { text: prompt },
-{ inline_data: { mime_type: 'image/jpeg', data: image } }
+{ inline_data: { mime_type: imageMime, data: image } }
 ]);
 if (!text) {
 return res.status(500).json({ error: '食品を認識できませんでした。別の写真でお試しください' });
