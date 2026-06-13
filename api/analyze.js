@@ -61,7 +61,9 @@ return null;
 async function callGemini(apiKey, parts) {
 const model = 'gemini-2.5-flash';
 const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
-const r = await fetch(url, {
+let r, json;
+  for (let __try = 0; __try < 3; __try++) {
+    r = await fetch(url, {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },
 body: JSON.stringify({
@@ -70,11 +72,19 @@ tools: [{ google_search: {} }],
 generationConfig: { temperature: 0 }
 })
 });
-const json = await r.json();
-if (!r.ok) {
-const msg = (json && json.error && json.error.message) ? json.error.message : ('HTTP ' + r.status);
-throw new Error(msg);
-}
+    json = await r.json();
+    if (r.ok) break;
+    const __msg = (json && json.error && json.error.message) ? json.error.message : ("HTTP " + r.status);
+    const __quota = r.status === 429 || /quota|rate|exceeded|retry in/i.test(__msg);
+    if (__quota && __try < 2) {
+      let __wait = 8000;
+      const __m = /retry in ([0-9.]+)s/i.exec(__msg);
+      if (__m) __wait = Math.min(20000, (parseFloat(__m[1]) + 1) * 1000);
+      await new Promise(function (res) { setTimeout(res, __wait); });
+      continue;
+    }
+    throw new Error(__msg);
+  }
 let text = '';
 if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) {
 text = json.candidates[0].content.parts.map(function (p) { return p.text || ''; }).join('');
