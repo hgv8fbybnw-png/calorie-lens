@@ -46,11 +46,11 @@ export default async function handler(req, res) {
   try {
     if (action === 'load') {
       var data = await readUser(code);
-      if (!data) return res.status(200).json({ found: false, targets: {}, log: {} });
-      return res.status(200).json({ found: true, targets: data.targets || {}, log: data.log || {} });
+      if (!data) return res.status(200).json({ found: false, targets: {}, log: {}, weight: {}, workout: {} });
+      return res.status(200).json({ found: true, targets: data.targets || {}, log: data.log || {}, weight: data.weight || {}, workout: data.workout || {} });
     }
     if (action === 'save') {
-      var payload = { targets: body.targets || {}, log: body.log || {}, updatedAt: Date.now() };
+      var payload = { targets: body.targets || {}, log: body.log || {}, weight: body.weight || {}, workout: body.workout || {}, updatedAt: Date.now() };
       await put(pathFor(code), JSON.stringify(payload), {
         access: 'public',
         contentType: 'application/json',
