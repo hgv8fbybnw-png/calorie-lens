@@ -178,13 +178,21 @@ kcal: data.kcal, protein_g: data.protein_g, fat_g: data.fat_g, carbs_g: data.car
 
 // ===== パッケージ: 商品名テキスト検索 =====
 if (mode === 'package' && productName) {
-  try {
     const prompt = NAME_PROMPT.replace('{NAME}', productName);
     let data = null;
+    let quotaHit = false;
     for (let attempt = 0; attempt < 2; attempt++) {
-      const text = await callGemini(apiKey, [{ text: prompt }]);
-      data = extractJson(text);
-      if (data && data.found === true && data.kcal) break;
+      try {
+        const text = await callGemini(apiKey, [{ text: prompt }]);
+        data = extractJson(text);
+        if (data && data.kcal) break;
+      } catch (ge) {
+        const gm = String(ge && ge.message || '');
+        if (/quota|rate|exceeded|429/i.test(gm)) { quotaHit = true; break; }
+      }
+    }
+    if (quotaHit) {
+      return res.status(503).json({ error: '今は混み合っています（無料の利用上限）。1分ほど待って、もう一度お試しください。' });
     }
     if (data && data.kcal) {
       const src = (data.source === 'official') ? 'name' : 'estimate';
@@ -196,10 +204,7 @@ if (mode === 'package' && productName) {
       });
     }
     return res.status(404).json({ error: '「' + productName + '」が見つかりませんでした。商品名を正確に入力するか、写真で試してください。' });
-  } catch (e) {
-    return res.status(500).json({ error: '検索に失敗しました: ' + (e.message || '通信エラー') });
   }
-}
 
 // ===== 画像解析（パッケージ / 外食）=====
 if (!image) {
