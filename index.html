@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>カロリーレンズ</title>
+<meta name="theme-color" content="#16a34a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="カロリーレンズ">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; }
@@ -136,6 +142,70 @@ var lastItems = null; // 直近の計算結果（記録追加用）
 var TKEY = "cl_targets_v1";
 var LKEY = "cl_log_v1";
 var DKEY = "cl_device_id_v1";
+var SKEY = "cl_sync_code_v1";
+// 同期コード（複数端末で記録を共有するための合言葉）
+function getSyncCode(){ try{ return localStorage.getItem(SKEY) || ""; }catch(e){ return ""; } }
+function setSyncCode(code){ try{ if(code){ localStorage.setItem(SKEY, code); } else { localStorage.removeItem(SKEY); } }catch(e){} }
+var _syncTimer = null;
+var _syncStatus = "";
+// サーバーへ保存（デバウンスして連続保存をまとめる）
+function scheduleSync(){
+  var code = getSyncCode();
+  if(!code) return;
+  if(_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(pushToServer, 800);
+}
+function pushToServer(){
+  var code = getSyncCode();
+  if(!code) return Promise.resolve();
+  setSyncStatus("saving");
+  return fetch("/api/data", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "save", code: code, targets: loadTargets(), log: loadLog() })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    setSyncStatus(d && d.ok ? "saved" : "error");
+  }).catch(function(){ setSyncStatus("error"); });
+}
+// サーバーから取得してローカルへ反映（記録はマージ、目標はサーバー優先）
+function pullFromServer(){
+  var code = getSyncCode();
+  if(!code) return Promise.resolve(false);
+  setSyncStatus("loading");
+  return fetch("/api/data", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "load", code: code })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(!d || d.error){ setSyncStatus("error"); return false; }
+    if(d.found){
+      var srvLog = d.log || {};
+      var locLog = loadLog();
+      var merged = mergeLogs(locLog, srvLog);
+      localStorage.setItem(LKEY, JSON.stringify(merged));
+      if(d.targets && (d.targets.kcal||d.targets.protein_g||d.targets.fat_g||d.targets.carbs_g)){
+        localStorage.setItem(TKEY, JSON.stringify(d.targets));
+      }
+    }
+    setSyncStatus("saved");
+    return true;
+  }).catch(function(){ setSyncStatus("error"); return false; });
+}
+// 日付ごとの記録をマージ（同一日のエントリは時刻tで重複排除）
+function mergeLogs(a, b){
+  var out = {};
+  var days = {};
+  Object.keys(a||{}).forEach(function(d){ days[d]=true; });
+  Object.keys(b||{}).forEach(function(d){ days[d]=true; });
+  Object.keys(days).forEach(function(d){
+    var list = [].concat(a[d]||[], b[d]||[]);
+    var seen = {}; var uniq = [];
+    list.forEach(function(x){ var k = (x.t||"") + "|" + (x.name||"") + "|" + (x.kcal||0); if(!seen[k]){ seen[k]=true; uniq.push(x); } });
+    uniq.sort(function(p,q){ return (p.t||0)-(q.t||0); });
+    out[d] = uniq;
+  });
+  return out;
+}
+function setSyncStatus(s){ _syncStatus = s; var el = document.getElementById("syncStatus"); if(el){ el.textContent = syncStatusText(s); } }
+function syncStatusText(s){ if(s==="saving"||s==="loading") return "同期中..."; if(s==="saved") return "✓ 同期済み"; if(s==="error") return "⚠ 同期エラー（後で自動再試行）"; return ""; }
 function getDeviceId(){
   var id = "";
   try { id = localStorage.getItem(DKEY) || ""; } catch(e){}
@@ -157,9 +227,9 @@ function uploadImageToStore(image){
 }
 function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
 function loadTargets(){ try{ return JSON.parse(localStorage.getItem(TKEY))||{}; }catch(e){ return {}; } }
-function saveTargets(t){ localStorage.setItem(TKEY, JSON.stringify(t)); }
+function saveTargets(t){ localStorage.setItem(TKEY, JSON.stringify(t)); scheduleSync(); }
 function loadLog(){ try{ return JSON.parse(localStorage.getItem(LKEY))||{}; }catch(e){ return {}; } }
-function saveLog(l){ localStorage.setItem(LKEY, JSON.stringify(l)); }
+function saveLog(l){ localStorage.setItem(LKEY, JSON.stringify(l)); scheduleSync(); }
 function todayEntries(){ var l=loadLog(); return l[todayStr()]||[]; }
 function todayTotals(){
   var e=todayEntries(), t={kcal:0,protein_g:0,fat_g:0,carbs_g:0};
@@ -237,7 +307,15 @@ function openSettings(){
     '<div class="frow"><label>タンパク質 P <span class="unit2">(g)</span></label><input type="number" id="t_p" inputmode="numeric" value="'+(t.protein_g||"")+'"></div>',
     '<div class="frow"><label>脂質 F <span class="unit2">(g)</span></label><input type="number" id="t_f" inputmode="numeric" value="'+(t.fat_g||"")+'"></div>',
     '<div class="frow"><label>炭水化物 C <span class="unit2">(g)</span></label><input type="number" id="t_c" inputmode="numeric" value="'+(t.carbs_g||"")+'"></div>',
-    '<button class="btn" id="saveTarget">保存する</button>',
+    '<div style="border-top:1px solid #eee;margin:18px 0 14px;"></div>',
+'<h3 style="font-size:16px;margin:0 0 4px;">端末間の同期</h3>',
+'<p class="sub" style="margin-bottom:10px;">同じ同期コードを各端末で設定すると、目標と記録がすべての端末で共有され、いつ開いても反映されます。コードは好きな合言葉でOK（4文字以上の英数字）。</p>',
+'<div class="frow"><label>同期コード（合言葉）</label><input type="text" id="t_sync" placeholder="例: myfood2026" autocapitalize="off" autocomplete="off" value="' + (getSyncCode()||"") + '"></div>',
+'<div id="syncStatus" style="font-size:12px;color:#16a34a;min-height:16px;margin-bottom:8px;"></div>',
+'<button class="btn sub" id="connectSync" style="margin-top:0;">この端末を同期コードに接続</button>',
+'<button class="btn sub" id="openHistory" style="margin-top:10px;">📅 過去の記録を見る</button>',
+'<div style="border-top:1px solid #eee;margin:18px 0 14px;"></div>',
+'<button class="btn" id="saveTarget">保存する</button>',
     '<button class="btn sub" id="closeSettings" style="margin-top:10px;">閉じる</button>',
     '</div>'
   ].join("");
@@ -264,6 +342,20 @@ function openSettings(){
     saveTargets(nt); ov.remove(); renderDay();
   });
   document.getElementById("closeSettings").addEventListener("click", function(){ ov.remove(); });
+setSyncStatus(_syncStatus);
+var csBtn = document.getElementById("connectSync");
+if(csBtn) csBtn.addEventListener("click", function(){
+  var code = (document.getElementById("t_sync").value||"").trim().toLowerCase().replace(/[^a-z0-9_-]/g,"");
+  if(code.length < 4){ setSyncStatus("error"); alert("同期コードは4文字以上の英数字で入力してください"); return; }
+  setSyncCode(code);
+  csBtn.textContent = "接続中...";
+  pullFromServer().then(function(){ return pushToServer(); }).then(function(){
+    renderDay();
+    csBtn.textContent = "✓ 接続しました（全端末で共有）";
+  });
+});
+var ohBtn = document.getElementById("openHistory");
+if(ohBtn) ohBtn.addEventListener("click", function(){ ov.remove(); openHistory(); });
 }
 document.getElementById("gear").addEventListener("click", openSettings);
 
@@ -539,8 +631,73 @@ result.innerHTML = '<div class="err">' + err.message + '</div>';
 goHome.disabled = false;
 });
 
+// ---------- 過去の記録（履歴）----------
+function openHistory(){
+  var log = loadLog();
+  var t2 = loadTargets();
+  var days = Object.keys(log).sort().reverse();
+  var ov = document.createElement("div");
+  ov.className = "modal"; ov.id = "historyModal";
+  var rows = "";
+  if(!days.length){
+    rows = '<p class="sub">まだ記録がありません。計算結果を「今日の記録に追加」すると、ここに日ごとの履歴が表示されます。</p>';
+  } else {
+    days.forEach(function(d){
+      var es = log[d]||[];
+      var tk=0,tp=0,tf=0,tc=0;
+      es.forEach(function(x){ tk+=num(x.kcal); tp+=num(x.protein_g); tf+=num(x.fat_g); tc+=num(x.carbs_g); });
+      var goalNote = (t2 && t2.kcal) ? (" / 目標" + t2.kcal + "kcal") : "";
+      var over = (t2 && t2.kcal) ? (tk > t2.kcal) : false;
+      rows += '<div class="food" style="flex-direction:column;align-items:stretch;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<div class="fn">' + d + '</div>' +
+        '<div class="fk" style="color:' + (over?"#dc2626":"#16a34a") + ';">' + Math.round(tk) + ' kcal' + goalNote + '</div></div>' +
+        '<div class="fa">P' + r1(tp) + ' / F' + r1(tf) + ' / C' + r1(tc) + ' ・ ' + es.length + '件</div>' +
+        '</div>';
+    });
+  }
+  ov.innerHTML = [
+    '<div class="sheet">',
+    '<h3>過去の記録</h3>',
+    '<p class="sub">日ごとの摂取カロリーとPFCの履歴です。同期コードを設定していれば、どの端末からでも同じ履歴が見られます。</p>',
+    rows,
+    '<button class="btn sub" id="closeHistory" style="margin-top:16px;">閉じる</button>',
+    '</div>'
+  ].join("");
+  document.body.appendChild(ov);
+  ov.addEventListener("click", function(e){ if(e.target===ov) ov.remove(); });
+  document.getElementById("closeHistory").addEventListener("click", function(){ ov.remove(); });
+}
+
+// ---------- PWA: manifest と service worker ----------
+function setupPwa(){
+  try {
+    var manifest = {
+      name: "カロリーレンズ", short_name: "カロリーレンズ",
+      start_url: "/", scope: "/", display: "standalone",
+      background_color: "#f7f8fa", theme_color: "#16a34a",
+      icons: [
+        { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { src: "/icon-512.png", sizes: "512x512", type: "image/png" }
+      ]
+    };
+    var blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+    var url = URL.createObjectURL(blob);
+    var link = document.querySelector('link[rel="manifest"]');
+    if(link){ link.setAttribute("href", url); }
+  } catch(e){}
+  if("serviceWorker" in navigator){
+    try { navigator.serviceWorker.register("/sw.js").catch(function(){}); } catch(e){}
+  }
+}
+
 // ---------- 初期化 ----------
 renderDay();
+setupPwa();
+// 起動時にサーバーから最新を取得して反映
+if(getSyncCode()){ pullFromServer().then(function(ok){ if(ok) renderDay(); }); }
+// アプリに復帰したとき（PWAで開き直し等）も最新を取得
+document.addEventListener("visibilitychange", function(){ if(!document.hidden && getSyncCode()){ pullFromServer().then(function(ok){ if(ok) renderDay(); }); } });
 
 </script>
 </body>
