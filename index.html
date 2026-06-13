@@ -251,17 +251,19 @@ function callAnalyze(payload,tries){
   });
 }
 var curMode="pkg";
+function apiMode(m){return m==="cook"?"home":(m==="eat"?"eatout":"package");}
+function foldItems(j,fallbackName){var items=(j&&j.items)||[];var s={name:"",kcal:0,protein_g:0,fat_g:0,carbs_g:0};var names=[];items.forEach(function(it){s.kcal+=num(it.kcal);s.protein_g+=num(it.protein_g);s.fat_g+=num(it.fat_g);s.carbs_g+=num(it.carbs_g);if(it.name)names.push(it.name);});s.name=names.join("・")||fallbackName||"記録";s.items=items;return s;}
 function renderResultItem(j){return '<div class="card" style="margin:10px 0"><b>'+(j.name||"解析結果")+'</b><br>'+Math.round(num(j.kcal))+' kcal / P'+Math.round(num(j.protein_g))+' F'+Math.round(num(j.fat_g))+' C'+Math.round(num(j.carbs_g))+'g</div>';}
 function analyzePhotos(){
   if(!picked.length){$("result").innerHTML='<div class="err">写真を選んでください</div>';return}
   $("goPhoto").disabled=true;$("result").innerHTML='<div class="hint"><span class="spin"></span>解析中…</div>';
   picked.forEach(function(d){uploadImageToStore(d)});
-  var jobs=picked.map(function(d){return callAnalyze({mode:curMode,image:d})});
+  var jobs=picked.map(function(d){return callAnalyze({mode:apiMode(curMode),image:d})});
   Promise.all(jobs.map(function(p){return p.then(function(r){return {ok:1,r:r}}).catch(function(e){return {ok:0,e:e}})}))
   .then(function(rs){
     var html="";var sum={kcal:0,protein_g:0,fat_g:0,carbs_g:0};var any=false;
     rs.forEach(function(x){
-      if(x.ok){any=true;html+=renderResultItem(x.r);sum.kcal+=num(x.r.kcal);sum.protein_g+=num(x.r.protein_g);sum.fat_g+=num(x.r.fat_g);sum.carbs_g+=num(x.r.carbs_g);addToday(x.r);}
+      if(x.ok){any=true;var fr=foldItems(x.r,"写真");html+=renderResultItem(fr);sum.kcal+=num(fr.kcal);sum.protein_g+=num(fr.protein_g);sum.fat_g+=num(fr.fat_g);sum.carbs_g+=num(fr.carbs_g);addToday(fr);}
       else{html+='<div class="err">解析に失敗しました: '+(x.e&&x.e.message||"")+'</div>';}
     });
     if(any&&rs.length>1){html='<div class="card" style="background:#f0fdf4"><b>合計</b> '+Math.round(sum.kcal)+'kcal / P'+Math.round(sum.protein_g)+' F'+Math.round(sum.fat_g)+' C'+Math.round(sum.carbs_g)+'g</div>'+html;}
@@ -276,10 +278,10 @@ function addIngredientRow(name,grams){
 function analyzeHome(){
   var R="resultHome";
   var rows=[].slice.call($("ingredients").querySelectorAll(".ing"));
-  var ings=rows.map(function(r){var i=r.querySelectorAll("input");return {name:i[0].value,grams:num(i[1].value)}}).filter(function(x){return x.name});
+  var ings=rows.map(function(r){var i=r.querySelectorAll("input");return {name:i[0].value,quantity:num(i[1].value),unit:"g"}}).filter(function(x){return x.name});
   if(!ings.length){$(R).innerHTML='<div class="err">材料を入力してください</div>';return}
   $("goHome").disabled=true;$(R).innerHTML='<div class="hint"><span class="spin"></span>計算中…</div>';
-  callAnalyze({mode:"cook",ingredients:ings}).then(function(j){$(R).innerHTML=renderResultItem(j);addToday(j);})
+  callAnalyze({mode:"home",ingredients:ings}).then(function(j){var fr=foldItems(j,"自炊");$(R).innerHTML=renderResultItem(fr);addToday(fr);})
   .catch(function(e){$(R).innerHTML='<div class="err">計算に失敗しました: '+(e.message||"")+'</div>'})
   .then(function(){$("goHome").disabled=false});
 }
