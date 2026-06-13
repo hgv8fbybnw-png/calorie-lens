@@ -1,5 +1,7 @@
 import { put } from '@vercel/blob';
 
+const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+
 export const config = { api: { bodyParser: { sizeLimit: '15mb' } } };
 
 // =============================================================
@@ -39,9 +41,10 @@ export default async function handler(req, res) {
     var buffer = Buffer.from(image, 'base64');
     var pathname = deviceId + '/' + tsName();
     var result = await put(pathname, buffer, {
-      access: 'public',
+      access: 'private',
       contentType: 'image/jpeg',
-      addRandomSuffix: false
+      addRandomSuffix: false,
+      token: TOKEN
     });
     return res.status(200).json({ ok: true, url: result.url, pathname: result.pathname });
   } catch (err) {
