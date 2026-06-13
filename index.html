@@ -8,7 +8,9 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; }
 .wrap { max-width: 520px; margin: 0 auto; padding: 20px 16px 60px; }
-.title { font-size: 21px; font-weight: 700; color: #16a34a; margin-bottom: 16px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.title { font-size: 21px; font-weight: 700; color: #16a34a; }
+.gear { width: 38px; height: 38px; border: none; background: #fff; border-radius: 12px; font-size: 19px; cursor: pointer; box-shadow: 0 1px 6px rgba(0,0,0,.06); }
 .card { background: #fff; border-radius: 18px; padding: 22px; box-shadow: 0 1px 10px rgba(0,0,0,.05); margin-bottom: 18px; }
 .label { font-size: 15px; color: #555; margin-bottom: 14px; }
 .modes { display: flex; gap: 8px; margin-bottom: 18px; }
@@ -23,12 +25,13 @@ body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-syste
 .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; background: #16a34a; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 16px; }
 .btn:disabled { background: #cbd5e1; }
 .btn.sub { background: #f0fdf4; color: #16a34a; border: 2px solid #bbf7d0; padding: 12px; font-size: 15px; }
+.btn.add { background: #2563eb; margin-top: 12px; }
 .hint { font-size: 12px; color: #999; margin-top: 12px; text-align: center; line-height: 1.6; }
 .row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
 .row input { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 15px; min-width: 0; }
-.row input.qty { flex: 0 0 92px; }
+.row input.qty { flex: 0 0 70px; }
+.row select.unitsel { flex: 0 0 74px; padding: 11px 6px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #fff; }
 .row .del { flex: 0 0 36px; height: 40px; border: none; background: #fee2e2; color: #b91c1c; border-radius: 10px; font-size: 18px; cursor: pointer; }
-.unit { flex: 0 0 auto; font-size: 14px; color: #777; }
 .kcal-wrap { text-align: center; padding: 10px 0; }
 .kcal { font-size: 46px; font-weight: 800; color: #16a34a; line-height: 1; }
 .kcal-unit { font-size: 16px; color: #16a34a; font-weight: 600; }
@@ -52,49 +55,197 @@ body { margin: 0; background: #f7f8fa; color: #1a1a1a; font-family: -apple-syste
 .spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #d1fae5; border-top-color: #16a34a; border-radius: 50%; animation: r 0.8s linear infinite; margin-bottom: 10px; }
 @keyframes r { to { transform: rotate(360deg); } }
 .hidden { display: none !important; }
+/* 今日の摂取状況 */
+.daycard { background: linear-gradient(135deg,#16a34a,#15803d); color:#fff; }
+.daycard .dhead { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.daycard .dtitle { font-size:15px; font-weight:700; }
+.daycard .ddate { font-size:12px; opacity:.85; }
+.bargroup { margin-top:14px; }
+.barrow { margin-top:12px; }
+.barlabel { display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px; }
+.barlabel .bl { font-weight:700; }
+.barlabel .bv { opacity:.95; }
+.bartrack { height:12px; background:rgba(255,255,255,.25); border-radius:999px; overflow:hidden; }
+.barfill { height:100%; border-radius:999px; background:#fff; transition:width .4s; }
+.barfill.over { background:#fca5a5; }
+.diff { font-size:12px; margin-top:4px; font-weight:600; }
+.diff.under { color:#dcfce7; }
+.diff.over { color:#fecaca; }
+.dempty { font-size:13px; opacity:.9; margin-top:8px; line-height:1.6; }
+.dactions { display:flex; gap:8px; margin-top:16px; }
+.dactions button { flex:1; padding:10px; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; background:rgba(255,255,255,.2); color:#fff; }
+/* 設定モーダル */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:flex-end; justify-content:center; z-index:50; }
+.sheet { background:#fff; width:100%; max-width:520px; border-radius:20px 20px 0 0; padding:24px 20px 30px; max-height:88vh; overflow:auto; }
+.sheet h3 { margin:0 0 4px; font-size:18px; }
+.sheet p.sub { margin:0 0 18px; font-size:13px; color:#777; }
+.frow { margin-bottom:14px; }
+.frow label { display:block; font-size:13px; color:#555; margin-bottom:6px; font-weight:600; }
+.frow input { width:100%; padding:13px; border:1px solid #cbd5e1; border-radius:10px; font-size:16px; }
+.frow .unit2 { font-size:12px; color:#999; font-weight:400; }
+.preset { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+.preset button { padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; border-radius:999px; font-size:12px; cursor:pointer; }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script>
+
 var app = document.getElementById("app");
 app.innerHTML = [
-  '<div class="wrap">',
-  '<div class="title">カロリーレンズ</div>',
+'<div class="wrap">',
+'<div class="topbar"><div class="title">カロリーレンズ</div><button class="gear" id="gear" title="目標を設定">⚙️</button></div>',
 
-  '<div class="modes">',
-  '<div class="mode active" data-mode="package">パッケージ商品</div>',
-  '<div class="mode" data-mode="eatout">外食</div>',
-  '<div class="mode" data-mode="home">自炊</div>',
-  '</div>',
+// 今日の摂取状況
+'<div class="card daycard" id="dayCard"></div>',
 
-  // パッケージ/外食 共通: 写真モード
-  '<div class="card" id="photoCard">',
-  '<div class="label" id="photoLabel">パッケージの写真を選んでください（複数可）</div>',
-  '<label class="pick" for="file" id="picklabel">写真を選ぶ</label>',
-  '<input type="file" id="file" accept="image/*" multiple>',
-  '<div class="thumbs" id="thumbs"></div>',
-  '<button class="btn" id="goPhoto" disabled>カロリーを計算する</button>',
-  '<div class="hint" id="photoHint">バーコードが写っていると、公式の栄養成分を正確に取得します。複数の写真はそれぞれ計算し、合計も表示します。</div>',
-  '</div>',
+'<div class="modes">',
+'<div class="mode active" data-mode="package">パッケージ商品</div>',
+'<div class="mode" data-mode="eatout">外食</div>',
+'<div class="mode" data-mode="home">自炊</div>',
+'</div>',
 
-  // 自炊モード: 食材入力
-  '<div class="card hidden" id="homeCard">',
-  '<div class="label">使った食材と分量を入力してください</div>',
-  '<div id="ingredients"></div>',
-  '<button class="btn sub" id="addRow">＋ 食材を追加</button>',
-  '<button class="btn" id="goHome" disabled>カロリーを計算する</button>',
-  '<div class="hint">日本食品標準成分表をもとに、分量から栄養を計算します。グラムで入れると最も正確です。</div>',
-  '</div>',
+'<div class="card" id="photoCard">',
+'<div class="label" id="photoLabel">パッケージの写真を選んでください（複数可）</div>',
+'<label class="pick" for="file" id="picklabel">写真を選ぶ</label>',
+'<input type="file" id="file" accept="image/*" multiple>',
+'<div class="thumbs" id="thumbs"></div>',
+'<button class="btn" id="goPhoto" disabled>カロリーを計算する</button>',
+'<div class="hint" id="photoHint">バーコードが写っていると、公式の栄養成分を正確に取得します。複数の写真はそれぞれ計算し、合計も表示します。</div>',
+'</div>',
 
-  '<div id="result" class="card" style="display:none"></div>',
-  '</div>'
+'<div class="card hidden" id="homeCard">',
+'<div class="label">使った食材と分量を入力してください</div>',
+'<div id="ingredients"></div>',
+'<button class="btn sub" id="addRow">＋ 食材を追加</button>',
+'<button class="btn" id="goHome" disabled>カロリーを計算する</button>',
+'<div class="hint">単位は g / ml / 個 / 切れ / 枚 / 本 / 杯 などから選べます。卵1個・鮭1切れのように入力できます。グラムが最も正確です。</div>',
+'</div>',
+
+'<div id="result" class="card" style="display:none"></div>',
+'</div>'
 ].join("");
 
 // ---------- 状態 ----------
-var mode = "package"; // package / eatout / home
-var images = [];      // base64配列（写真モード）
+var mode = "package";
+var images = [];
+var lastItems = null; // 直近の計算結果（記録追加用）
+
+// ---------- localStorage: 目標と記録 ----------
+var TKEY = "cl_targets_v1";
+var LKEY = "cl_log_v1";
+function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+function loadTargets(){ try{ return JSON.parse(localStorage.getItem(TKEY))||{}; }catch(e){ return {}; } }
+function saveTargets(t){ localStorage.setItem(TKEY, JSON.stringify(t)); }
+function loadLog(){ try{ return JSON.parse(localStorage.getItem(LKEY))||{}; }catch(e){ return {}; } }
+function saveLog(l){ localStorage.setItem(LKEY, JSON.stringify(l)); }
+function todayEntries(){ var l=loadLog(); return l[todayStr()]||[]; }
+function todayTotals(){
+  var e=todayEntries(), t={kcal:0,protein_g:0,fat_g:0,carbs_g:0};
+  e.forEach(function(x){ t.kcal+=num(x.kcal); t.protein_g+=num(x.protein_g); t.fat_g+=num(x.fat_g); t.carbs_g+=num(x.carbs_g); });
+  return t;
+}
+function addToToday(items){
+  var l=loadLog(), d=todayStr(); if(!l[d]) l[d]=[];
+  items.forEach(function(it){ l[d].push({ name:it.name, kcal:num(it.kcal), protein_g:num(it.protein_g), fat_g:num(it.fat_g), carbs_g:num(it.carbs_g), t:Date.now() }); });
+  saveLog(l);
+}
+function clearToday(){ var l=loadLog(); delete l[todayStr()]; saveLog(l); }
+
+function num(n){ return Number(n)||0; }
+function r1(n){ return Math.round(num(n)*10)/10; }
+
+// ---------- 今日の摂取状況 描画 ----------
+var dayCard = document.getElementById("dayCard");
+function bar(labelJa, cur, target, unit){
+  cur = num(cur);
+  if(!target || target<=0){
+    return '<div class="barrow"><div class="barlabel"><span class="bl">'+labelJa+'</span><span class="bv">'+r1(cur)+unit+' / 未設定</span></div>'
+      + '<div class="bartrack"><div class="barfill" style="width:0%"></div></div></div>';
+  }
+  var pct = Math.min(100, Math.round(cur/target*100));
+  var over = cur > target;
+  var diff = r1(Math.abs(target-cur));
+  var diffHtml = over
+    ? '<div class="diff over">'+diff+unit+' オーバー</div>'
+    : '<div class="diff under">あと '+diff+unit+'</div>';
+  return '<div class="barrow"><div class="barlabel"><span class="bl">'+labelJa+'</span><span class="bv">'+r1(cur)+' / '+target+unit+'</span></div>'
+    + '<div class="bartrack"><div class="barfill'+(over?' over':'')+'" style="width:'+pct+'%"></div></div>'
+    + diffHtml + '</div>';
+}
+function renderDay(){
+  var t = loadTargets();
+  var tot = todayTotals();
+  var hasTarget = (t.kcal||t.protein_g||t.fat_g||t.carbs_g);
+  var n = todayEntries().length;
+  var h = '<div class="dhead"><div class="dtitle">今日の摂取状況</div><div class="ddate">'+todayStr()+'</div></div>';
+  if(!n && !hasTarget){
+    h += '<div class="dempty">⚙️から1日の目標（カロリー・PFC）を設定して、計算結果を「今日の記録に追加」すると、ここに達成状況がグラフで表示されます。</div>';
+    dayCard.innerHTML = h; return;
+  }
+  h += '<div class="bargroup">';
+  h += bar('カロリー', tot.kcal, t.kcal, 'kcal');
+  h += bar('タンパク質 P', tot.protein_g, t.protein_g, 'g');
+  h += bar('脂質 F', tot.fat_g, t.fat_g, 'g');
+  h += bar('炭水化物 C', tot.carbs_g, t.carbs_g, 'g');
+  h += '</div>';
+  h += '<div class="dactions">';
+  h += '<button id="undoLast">最後の記録を取消</button>';
+  h += '<button id="resetDay">今日をリセット</button>';
+  h += '</div>';
+  dayCard.innerHTML = h;
+  var ul=document.getElementById("undoLast"); if(ul) ul.addEventListener("click", function(){ var l=loadLog(),d=todayStr(); if(l[d]&&l[d].length){ l[d].pop(); saveLog(l); renderDay(); } });
+  var rd=document.getElementById("resetDay"); if(rd) rd.addEventListener("click", function(){ if(confirm("今日の記録をすべて消しますか？")){ clearToday(); renderDay(); } });
+}
+
+// ---------- 設定モーダル ----------
+function openSettings(){
+  var t = loadTargets();
+  var ov = document.createElement("div");
+  ov.className = "modal"; ov.id = "settingsModal";
+  ov.innerHTML = [
+    '<div class="sheet">',
+    '<h3>1日の目標を設定</h3>',
+    '<p class="sub">カロリーとPFC（タンパク質・脂質・炭水化物）の1日の目標を入力してください。空欄の項目はグラフに「未設定」と表示されます。</p>',
+    '<div class="preset">',
+    '<button data-p="cut">減量の目安</button>',
+    '<button data-p="maint">維持の目安</button>',
+    '<button data-p="bulk">増量の目安</button>',
+    '</div>',
+    '<div class="frow"><label>カロリー <span class="unit2">(kcal)</span></label><input type="number" id="t_kcal" inputmode="numeric" value="'+(t.kcal||"")+'"></div>',
+    '<div class="frow"><label>タンパク質 P <span class="unit2">(g)</span></label><input type="number" id="t_p" inputmode="numeric" value="'+(t.protein_g||"")+'"></div>',
+    '<div class="frow"><label>脂質 F <span class="unit2">(g)</span></label><input type="number" id="t_f" inputmode="numeric" value="'+(t.fat_g||"")+'"></div>',
+    '<div class="frow"><label>炭水化物 C <span class="unit2">(g)</span></label><input type="number" id="t_c" inputmode="numeric" value="'+(t.carbs_g||"")+'"></div>',
+    '<button class="btn" id="saveTarget">保存する</button>',
+    '<button class="btn sub" id="closeSettings" style="margin-top:10px;">閉じる</button>',
+    '</div>'
+  ].join("");
+  document.body.appendChild(ov);
+  ov.addEventListener("click", function(e){ if(e.target===ov) ov.remove(); });
+  ov.querySelectorAll(".preset button").forEach(function(b){
+    b.addEventListener("click", function(){
+      var p=b.getAttribute("data-p");
+      var sets={ cut:{k:1500,p:120,f:40,c:150}, maint:{k:2000,p:120,f:55,c:240}, bulk:{k:2500,p:150,f:65,c:320} };
+      var s=sets[p];
+      document.getElementById("t_kcal").value=s.k;
+      document.getElementById("t_p").value=s.p;
+      document.getElementById("t_f").value=s.f;
+      document.getElementById("t_c").value=s.c;
+    });
+  });
+  document.getElementById("saveTarget").addEventListener("click", function(){
+    var nt = {
+      kcal: num(document.getElementById("t_kcal").value),
+      protein_g: num(document.getElementById("t_p").value),
+      fat_g: num(document.getElementById("t_f").value),
+      carbs_g: num(document.getElementById("t_c").value)
+    };
+    saveTargets(nt); ov.remove(); renderDay();
+  });
+  document.getElementById("closeSettings").addEventListener("click", function(){ ov.remove(); });
+}
+document.getElementById("gear").addEventListener("click", openSettings);
 
 // ---------- 要素 ----------
 var modeEls = document.querySelectorAll(".mode");
@@ -112,248 +263,264 @@ var result = document.getElementById("result");
 
 // ---------- モード切替 ----------
 modeEls.forEach(function (el) {
-  el.addEventListener("click", function () {
-    mode = el.getAttribute("data-mode");
-    modeEls.forEach(function (m) { m.classList.toggle("active", m === el); });
-    result.style.display = "none";
-    if (mode === "home") {
-      photoCard.classList.add("hidden");
-      homeCard.classList.remove("hidden");
-      if (!ingredients.children.length) addIngredientRow();
-    } else {
-      homeCard.classList.add("hidden");
-      photoCard.classList.remove("hidden");
-      if (mode === "package") {
-        photoLabel.textContent = "パッケージの写真を選んでください（複数可）";
-        photoHint.textContent = "バーコードが写っていると、公式の栄養成分を正確に取得します。複数の写真はそれぞれ計算し、合計も表示します。";
-      } else {
-        photoLabel.textContent = "料理の写真を選んでください（複数可）";
-        photoHint.textContent = "外食は見た目と量から推定するため誤差があります。複数の写真はそれぞれ計算し、合計も表示します。";
-      }
-    }
-  });
+el.addEventListener("click", function () {
+mode = el.getAttribute("data-mode");
+modeEls.forEach(function (m) { m.classList.toggle("active", m === el); });
+result.style.display = "none";
+if (mode === "home") {
+photoCard.classList.add("hidden");
+homeCard.classList.remove("hidden");
+if (!ingredients.children.length) addIngredientRow();
+} else {
+homeCard.classList.add("hidden");
+photoCard.classList.remove("hidden");
+if (mode === "package") {
+photoLabel.textContent = "パッケージの写真を選んでください（複数可）";
+photoHint.textContent = "バーコードが写っていると、公式の栄養成分を正確に取得します。複数の写真はそれぞれ計算し、合計も表示します。";
+} else {
+photoLabel.textContent = "料理の写真を選んでください（複数可）";
+photoHint.textContent = "外食は見た目と量から推定するため誤差があります。複数の写真はそれぞれ計算し、合計も表示します。";
+}
+}
+});
 });
 
 // ---------- 写真処理（複数） ----------
 function renderThumbs() {
-  thumbs.innerHTML = "";
-  images.forEach(function (im, i) {
-    var d = document.createElement("div");
-    d.className = "thumb";
-    d.innerHTML = '<img src="data:image/jpeg;base64,' + im + '"><div class="x" data-i="' + i + '">×</div>';
-    thumbs.appendChild(d);
-  });
-  thumbs.querySelectorAll(".x").forEach(function (x) {
-    x.addEventListener("click", function () {
-      images.splice(parseInt(x.getAttribute("data-i"), 10), 1);
-      renderThumbs();
-      goPhoto.disabled = images.length === 0;
-    });
-  });
-  goPhoto.disabled = images.length === 0;
+thumbs.innerHTML = "";
+images.forEach(function (im, i) {
+var d = document.createElement("div");
+d.className = "thumb";
+d.innerHTML = '<img src="data:image/jpeg;base64,' + im + '"><div class="x" data-i="' + i + '">×</div>';
+thumbs.appendChild(d);
+});
+thumbs.querySelectorAll(".x").forEach(function (x) {
+x.addEventListener("click", function () {
+images.splice(parseInt(x.getAttribute("data-i"), 10), 1);
+renderThumbs();
+goPhoto.disabled = images.length === 0;
+});
+});
+goPhoto.disabled = images.length === 0;
 }
 
 function fileToData(f) {
-  return new Promise(function (resolve, reject) {
-    function fromImg(src, w0, h0) {
-      var max = 1280, w = w0, h = h0;
-      if (w > h && w > max) { h = Math.round(h * max / w); w = max; }
-      else if (h >= w && h > max) { w = Math.round(w * max / h); h = max; }
-      var canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      var ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(src, 0, 0, w, h);
-      resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
-    }
-    (async function () {
-      try {
-        if (typeof createImageBitmap === "function") {
-          try { var b = await createImageBitmap(f); fromImg(b, b.width, b.height); if (b.close) b.close(); return; } catch (e) {}
-        }
-        var reader = new FileReader();
-        reader.onload = function () {
-          var img = new Image();
-          img.onload = function () { fromImg(img, img.naturalWidth || img.width, img.naturalHeight || img.height); };
-          img.onerror = function () { reject(new Error("decode")); };
-          img.src = reader.result;
-        };
-        reader.onerror = function () { reject(new Error("read")); };
-        reader.readAsDataURL(f);
-      } catch (e) { reject(e); }
-    })();
-  });
+return new Promise(function (resolve, reject) {
+function fromImg(src, w0, h0) {
+var max = 1280, w = w0, h = h0;
+if (w > h && w > max) { h = Math.round(h * max / w); w = max; }
+else if (h >= w && h > max) { w = Math.round(w * max / h); h = max; }
+var canvas = document.createElement("canvas");
+canvas.width = w; canvas.height = h;
+var ctx = canvas.getContext("2d");
+ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h);
+ctx.drawImage(src, 0, 0, w, h);
+resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
+}
+(async function () {
+try {
+if (typeof createImageBitmap === "function") {
+try { var b = await createImageBitmap(f); fromImg(b, b.width, b.height); if (b.close) b.close(); return; } catch (e) {}
+}
+var reader = new FileReader();
+reader.onload = function () {
+var img = new Image();
+img.onload = function () { fromImg(img, img.naturalWidth || img.width, img.naturalHeight || img.height); };
+img.onerror = function () { reject(new Error("decode")); };
+img.src = reader.result;
+};
+reader.onerror = function () { reject(new Error("read")); };
+reader.readAsDataURL(f);
+} catch (e) { reject(e); }
+})();
+});
 }
 
 fileEl.addEventListener("change", async function () {
-  var files = Array.prototype.slice.call(fileEl.files || []);
-  if (!files.length) return;
-  for (var i = 0; i < files.length; i++) {
-    var f = files[i];
-    if (!/^image\//i.test(f.type) && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name || "")) continue;
-    try { var data = await fileToData(f); images.push(data); } catch (e) {}
-  }
-  fileEl.value = "";
-  renderThumbs();
+var files = Array.prototype.slice.call(fileEl.files || []);
+if (!files.length) return;
+for (var i = 0; i < files.length; i++) {
+var f = files[i];
+if (!/^image\//i.test(f.type) && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name || "")) continue;
+try { var data = await fileToData(f); images.push(data); } catch (e) {}
+}
+fileEl.value = "";
+renderThumbs();
 });
 
 // ---------- バーコード検出 ----------
 function loadImage(src) {
-  return new Promise(function (resolve, reject) {
-    var img = new Image();
-    img.onload = function () { resolve(img); };
-    img.onerror = function () { reject(new Error("img")); };
-    img.src = src;
-  });
+return new Promise(function (resolve, reject) {
+var img = new Image();
+img.onload = function () { resolve(img); };
+img.onerror = function () { reject(new Error("img")); };
+img.src = src;
+});
 }
 async function detectBarcode(dataUrl) {
-  if (!dataUrl) return null;
-  try {
-    if ("BarcodeDetector" in window) {
-      var detector = new window.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
-      var img = await loadImage(dataUrl);
-      var codes = await detector.detect(img);
-      if (codes && codes.length) {
-        var raw = (codes[0].rawValue || "").replace(/\D/g, "");
-        if (raw.length >= 8) return raw;
-      }
-    }
-  } catch (e) {}
-  try {
-    if (window.ZXing && window.ZXing.BrowserMultiFormatReader) {
-      var reader = new window.ZXing.BrowserMultiFormatReader();
-      var res = await reader.decodeFromImageUrl(dataUrl);
-      if (res && res.text) { var r2 = res.text.replace(/\D/g, ""); if (r2.length >= 8) return r2; }
-    }
-  } catch (e) {}
-  return null;
+if (!dataUrl) return null;
+try {
+if ("BarcodeDetector" in window) {
+var detector = new window.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
+var img = await loadImage(dataUrl);
+var codes = await detector.detect(img);
+if (codes && codes.length) {
+var raw = (codes[0].rawValue || "").replace(/\D/g, "");
+if (raw.length >= 8) return raw;
+}
+}
+} catch (e) {}
+try {
+if (window.ZXing && window.ZXing.BrowserMultiFormatReader) {
+var reader = new window.ZXing.BrowserMultiFormatReader();
+var res = await reader.decodeFromImageUrl(dataUrl);
+if (res && res.text) { var r2 = res.text.replace(/\D/g, ""); if (r2.length >= 8) return r2; }
+}
+} catch (e) {}
+return null;
 }
 
 function srcBadge(source) {
-  if (source === "barcode") return '<span class="badge barcode">バーコード照合（確定）</span>';
-  if (source === "official") return '<span class="badge official">公式データ</span>';
-  if (source === "label") return '<span class="badge label">パッケージ印字</span>';
-  if (source === "recipe") return '<span class="badge official">成分表ベース</span>';
-  return '<span class="badge estimate">推定</span>';
+if (source === "barcode") return '<span class="badge barcode">バーコード照合（確定）</span>';
+if (source === "official") return '<span class="badge official">公式データ</span>';
+if (source === "label") return '<span class="badge label">パッケージ印字</span>';
+if (source === "recipe") return '<span class="badge official">成分表ベース</span>';
+return '<span class="badge estimate">推定</span>';
 }
 
-function num(n){ return Number(n)||0; }
-function r1(n){ return Math.round(num(n)*10)/10; }
-
 function renderResult(items) {
-  var totK=0,totP=0,totF=0,totC=0, hasEstimate=false;
-  items.forEach(function(it){ totK+=num(it.kcal); totP+=num(it.protein_g); totF+=num(it.fat_g); totC+=num(it.carbs_g); if(it.source==="estimate")hasEstimate=true; });
-  var h = '<div class="kcal-wrap"><div class="kcal">' + Math.round(totK) + '</div><div class="kcal-unit">kcal（合計）</div></div>';
-  h += '<div class="macros">';
-  h += '<div class="macro"><div class="v">' + r1(totP) + 'g</div><div class="n">タンパク質</div></div>';
-  h += '<div class="macro"><div class="v">' + r1(totF) + 'g</div><div class="n">脂質</div></div>';
-  h += '<div class="macro"><div class="v">' + r1(totC) + 'g</div><div class="n">炭水化物</div></div>';
-  h += '</div>';
-  h += '<div class="section">内訳</div>';
-  items.forEach(function (it) {
-    h += '<div class="food"><div><div class="fn">' + (it.name||"") + '</div>'
-       + '<div class="fa">' + (it.amount||"") + ' ・ P' + r1(it.protein_g) + ' F' + r1(it.fat_g) + ' C' + r1(it.carbs_g) + '</div>'
-       + srcBadge(it.source) + '</div><div class="fk">' + Math.round(num(it.kcal)) + ' kcal</div></div>';
-  });
-  if (hasEstimate) h += '<div class="srcnote">推定値が含まれます。パッケージはバーコード、自炊は食材のグラム入力で精度が上がります。</div>';
-  result.style.display = "block";
-  result.innerHTML = h;
+lastItems = items;
+var totK=0,totP=0,totF=0,totC=0, hasEstimate=false;
+items.forEach(function(it){ totK+=num(it.kcal); totP+=num(it.protein_g); totF+=num(it.fat_g); totC+=num(it.carbs_g); if(it.source==="estimate")hasEstimate=true; });
+var h = '<div class="kcal-wrap"><div class="kcal">' + Math.round(totK) + '</div><div class="kcal-unit">kcal（合計）</div></div>';
+h += '<div class="macros">';
+h += '<div class="macro"><div class="v">' + r1(totP) + 'g</div><div class="n">タンパク質</div></div>';
+h += '<div class="macro"><div class="v">' + r1(totF) + 'g</div><div class="n">脂質</div></div>';
+h += '<div class="macro"><div class="v">' + r1(totC) + 'g</div><div class="n">炭水化物</div></div>';
+h += '</div>';
+h += '<div class="section">内訳</div>';
+items.forEach(function (it) {
+h += '<div class="food"><div><div class="fn">' + (it.name||"") + '</div>'
++ '<div class="fa">' + (it.amount||"") + ' ・ P' + r1(it.protein_g) + ' F' + r1(it.fat_g) + ' C' + r1(it.carbs_g) + '</div>'
++ srcBadge(it.source) + '</div><div class="fk">' + Math.round(num(it.kcal)) + ' kcal</div></div>';
+});
+if (hasEstimate) h += '<div class="srcnote">推定値が含まれます。パッケージはバーコード、自炊は食材のグラム入力で精度が上がります。</div>';
+h += '<button class="btn add" id="addToday">＋ 今日の記録に追加する</button>';
+result.style.display = "block";
+result.innerHTML = h;
+var at = document.getElementById("addToday");
+at.addEventListener("click", function(){
+  if(!lastItems || !lastItems.length) return;
+  addToToday(lastItems);
+  at.textContent = "✓ 今日の記録に追加しました";
+  at.style.background = "#15803d";
+  at.disabled = true;
+  renderDay();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
 }
 
 // ---------- 写真モード 計算 ----------
 async function analyzeImage(image, withBarcode) {
-  var barcode = null;
-  if (withBarcode) { try { barcode = await detectBarcode("data:image/jpeg;base64," + image); } catch (e) {} }
-  var payload = { image: image, mode: mode };
-  if (barcode) payload.barcode = barcode;
-  var res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  var text = await res.text();
-  var data; try { data = JSON.parse(text); } catch (e) { throw new Error("サーバー応答エラー"); }
-  if (data.error) throw new Error(data.error);
-  return (data.items || []).map(function (it) {
-    return { name: it.name, amount: it.amount, source: it.source || (mode==="eatout"?"estimate":"label"),
-             kcal: num(it.kcal), protein_g: num(it.protein_g), fat_g: num(it.fat_g), carbs_g: num(it.carbs_g) };
-  });
+var barcode = null;
+if (withBarcode) { try { barcode = await detectBarcode("data:image/jpeg;base64," + image); } catch (e) {} }
+var payload = { image: image, mode: mode };
+if (barcode) payload.barcode = barcode;
+var res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+var text = await res.text();
+var data; try { data = JSON.parse(text); } catch (e) { throw new Error("サーバー応答エラー"); }
+if (data.error) throw new Error(data.error);
+return (data.items || []).map(function (it) {
+return { name: it.name, amount: it.amount, source: it.source || (mode==="eatout"?"estimate":"label"),
+kcal: num(it.kcal), protein_g: num(it.protein_g), fat_g: num(it.fat_g), carbs_g: num(it.carbs_g) };
+});
 }
 
 goPhoto.addEventListener("click", async function () {
-  if (!images.length) return;
-  goPhoto.disabled = true;
-  result.style.display = "block";
-  result.innerHTML = '<div class="loading"><div class="spin"></div><div>解析中... (' + images.length + '枚)</div></div>';
-  var all = [];
-  try {
-    for (var i = 0; i < images.length; i++) {
-      result.innerHTML = '<div class="loading"><div class="spin"></div><div>' + (i+1) + ' / ' + images.length + ' 枚目を解析中...</div></div>';
-      var items = await analyzeImage(images[i], mode === "package");
-      all = all.concat(items);
-    }
-    if (!all.length) throw new Error("食品を認識できませんでした。別の写真でお試しください");
-    renderResult(all);
-  } catch (err) {
-    result.style.display = "block";
-    result.innerHTML = '<div class="err">' + err.message + '</div>';
-  }
-  goPhoto.disabled = false;
+if (!images.length) return;
+goPhoto.disabled = true;
+result.style.display = "block";
+result.innerHTML = '<div class="loading"><div class="spin"></div><div>解析中... (' + images.length + '枚)</div></div>';
+var all = [];
+try {
+for (var i = 0; i < images.length; i++) {
+result.innerHTML = '<div class="loading"><div class="spin"></div><div>' + (i+1) + ' / ' + images.length + ' 枚目を解析中...</div></div>';
+var items = await analyzeImage(images[i], mode === "package");
+all = all.concat(items);
+}
+if (!all.length) throw new Error("食品を認識できませんでした。別の写真でお試しください");
+renderResult(all);
+} catch (err) {
+result.style.display = "block";
+result.innerHTML = '<div class="err">' + err.message + '</div>';
+}
+goPhoto.disabled = false;
 });
 
-// ---------- 自炊モード ----------
-function addIngredientRow(name, qty) {
-  var div = document.createElement("div");
-  div.className = "row";
-  div.innerHTML = '<input type="text" class="ing" placeholder="食材名（例: 鶏むね肉）" value="' + (name||"") + '">'
-                + '<input type="number" class="qty" placeholder="分量" value="' + (qty||"") + '">'
-                + '<span class="unit">g</span>'
-                + '<button class="del">×</button>';
-  div.querySelector(".del").addEventListener("click", function () {
-    div.remove();
-    updateHomeBtn();
-  });
-  div.querySelectorAll("input").forEach(function (inp) { inp.addEventListener("input", updateHomeBtn); });
-  ingredients.appendChild(div);
-  updateHomeBtn();
+// ---------- 自炊モード（単位対応） ----------
+var UNITS = ["g","ml","個","切れ","枚","本","杯","玉","パック","大さじ","小さじ"];
+function addIngredientRow(name, qty, unit) {
+var div = document.createElement("div");
+div.className = "row";
+var opts = UNITS.map(function(u){ return '<option value="'+u+'"'+((unit||"g")===u?" selected":"")+'>'+u+'</option>'; }).join("");
+div.innerHTML = '<input type="text" class="ing" placeholder="食材名（例: 卵）" value="' + (name||"") + '">'
++ '<input type="number" class="qty" inputmode="decimal" placeholder="分量" value="' + (qty||"") + '">'
++ '<select class="unitsel">' + opts + '</select>'
++ '<button class="del">×</button>';
+div.querySelector(".del").addEventListener("click", function () {
+div.remove();
+updateHomeBtn();
+});
+div.querySelectorAll("input").forEach(function (inp) { inp.addEventListener("input", updateHomeBtn); });
+ingredients.appendChild(div);
+updateHomeBtn();
 }
 function updateHomeBtn() {
-  var rows = ingredients.querySelectorAll(".row");
-  var ok = false;
-  rows.forEach(function (r) {
-    var n = r.querySelector(".ing").value.trim();
-    var q = r.querySelector(".qty").value.trim();
-    if (n && q) ok = true;
-  });
-  goHome.disabled = !ok;
+var rows = ingredients.querySelectorAll(".row");
+var ok = false;
+rows.forEach(function (r) {
+var n = r.querySelector(".ing").value.trim();
+var q = r.querySelector(".qty").value.trim();
+if (n && q) ok = true;
+});
+goHome.disabled = !ok;
 }
 addRow.addEventListener("click", function () { addIngredientRow(); });
 
 goHome.addEventListener("click", async function () {
-  var rows = ingredients.querySelectorAll(".row");
-  var list = [];
-  rows.forEach(function (r) {
-    var n = r.querySelector(".ing").value.trim();
-    var q = parseFloat(r.querySelector(".qty").value);
-    if (n && q > 0) list.push({ name: n, grams: q });
-  });
-  if (!list.length) return;
-  goHome.disabled = true;
-  result.style.display = "block";
-  result.innerHTML = '<div class="loading"><div class="spin"></div><div>成分表をもとに計算中...</div></div>';
-  try {
-    var res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "home", ingredients: list }) });
-    var text = await res.text();
-    var data; try { data = JSON.parse(text); } catch (e) { throw new Error("サーバー応答エラー"); }
-    if (data.error) throw new Error(data.error);
-    var items = (data.items || []).map(function (it) {
-      return { name: it.name, amount: it.amount, source: it.source || "recipe",
-               kcal: num(it.kcal), protein_g: num(it.protein_g), fat_g: num(it.fat_g), carbs_g: num(it.carbs_g) };
-    });
-    if (!items.length) throw new Error("計算できませんでした。食材名を確認してください");
-    renderResult(items);
-  } catch (err) {
-    result.style.display = "block";
-    result.innerHTML = '<div class="err">' + err.message + '</div>';
-  }
-  goHome.disabled = false;
+var rows = ingredients.querySelectorAll(".row");
+var list = [];
+rows.forEach(function (r) {
+var n = r.querySelector(".ing").value.trim();
+var q = parseFloat(r.querySelector(".qty").value);
+var u = r.querySelector(".unitsel").value;
+if (n && q > 0) list.push({ name: n, quantity: q, unit: u });
 });
+if (!list.length) return;
+goHome.disabled = true;
+result.style.display = "block";
+result.innerHTML = '<div class="loading"><div class="spin"></div><div>成分表をもとに計算中...</div></div>';
+try {
+var res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "home", ingredients: list }) });
+var text = await res.text();
+var data; try { data = JSON.parse(text); } catch (e) { throw new Error("サーバー応答エラー"); }
+if (data.error) throw new Error(data.error);
+var items = (data.items || []).map(function (it) {
+return { name: it.name, amount: it.amount, source: it.source || "recipe",
+kcal: num(it.kcal), protein_g: num(it.protein_g), fat_g: num(it.fat_g), carbs_g: num(it.carbs_g) };
+});
+if (!items.length) throw new Error("計算できませんでした。食材名を確認してください");
+renderResult(items);
+} catch (err) {
+result.style.display = "block";
+result.innerHTML = '<div class="err">' + err.message + '</div>';
+}
+goHome.disabled = false;
+});
+
+// ---------- 初期化 ----------
+renderDay();
+
 </script>
 </body>
 </html>
