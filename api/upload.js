@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     var buffer = Buffer.from(image, 'base64');
     var pathname = deviceId + '/' + tsName();
     var result = await put(pathname, buffer, {
-      access: 'public',
+      access: 'private',
       contentType: 'image/jpeg',
       addRandomSuffix: false
     });
