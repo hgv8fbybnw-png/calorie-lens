@@ -20,12 +20,11 @@ const BARCODE_PROMPT = [
 ].join('\n');
 
 const NAME_PROMPT = [
-'あなたは日本の食品の栄養成分データベースです。次の商品名の商品を特定し、メーカー公式またはコンビニ公式(セブン-イレブン/ローソン/ファミリーマート等)の栄養成分表示を返してください。',
+'あなたは日本の食品の栄養成分データベースです。次の商品名の商品を特定し、栄養成分(1パッケージ/内容量全量あたり、熱量kcal・たんぱく質・脂質・炭水化物)を返してください。',
 '商品名: {NAME}',
-'Google検索ツールで、この商品名に最も一致する正式な商品の公式栄養成分(1パッケージ/内容量全量あたり、熱量kcal・たんぱく質・脂質・炭水化物)を確認してください。',
-'【厳守】公式の栄養成分表示が確認できた場合のみ、その実数値を返す。記憶や一般的な推定で数値を作らない。糖質と食物繊維が別記載なら合算して炭水化物とする。',
-'【出力】説明やマークダウンを付けず、次のJSONのみ: { "found": true/false, "name": "正式な商品名", "amount": "内容量", "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 }',
-'公式値が特定できない場合は found:false を返す。'
+'まずGoogle検索ツールで、この商品名に最も一致する正式な商品の公式栄養成分(メーカー公式・セブン/ローソン/ファミマ等のコンビニ公式)を確認してください。公式値が確認できたら source は "official" とする。',
+'公式値が確認できない場合でも found:false にはせず、同種の一般的な市販品から妥当な推定値を返し、source は "estimate" とする。糖質と食物繊維が別記載なら合算して炭水化物とする。',
+'【出力】説明やマークダウンを付けず、次のJSONのみ: { "found": true, "name": "正式な商品名", "amount": "内容量", "source": "official"または"estimate", "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 }'
 ].join('\n');
 
 const IMAGE_PACKAGE_PROMPT = [
@@ -187,15 +186,16 @@ if (mode === 'package' && productName) {
       data = extractJson(text);
       if (data && data.found === true && data.kcal) break;
     }
-    if (data && data.found === true && data.kcal) {
+    if (data && data.kcal) {
+      const src = (data.source === 'official') ? 'name' : 'estimate';
       return res.status(200).json({
         items: normItems([{
-          name: data.name || productName, amount: data.amount, source: 'name',
+          name: data.name || productName, amount: data.amount, source: src,
           kcal: data.kcal, protein_g: data.protein_g, fat_g: data.fat_g, carbs_g: data.carbs_g
-        }], 'name')
+        }], src)
       });
     }
-    return res.status(404).json({ error: '「' + productName + '」の公式の栄養成分が見つかりませんでした。商品名を正確に入力するか、写真で試してください。' });
+    return res.status(404).json({ error: '「' + productName + '」が見つかりませんでした。商品名を正確に入力するか、写真で試してください。' });
   } catch (e) {
     return res.status(500).json({ error: '検索に失敗しました: ' + (e.message || '通信エラー') });
   }
