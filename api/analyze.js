@@ -181,8 +181,12 @@ kcal: data.kcal, protein_g: data.protein_g, fat_g: data.fat_g, carbs_g: data.car
 if (mode === 'package' && productName) {
   try {
     const prompt = NAME_PROMPT.replace('{NAME}', productName);
-    const text = await callGemini(apiKey, [{ text: prompt }]);
-    const data = extractJson(text);
+    let data = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const text = await callGemini(apiKey, [{ text: prompt }]);
+      data = extractJson(text);
+      if (data && data.found === true && data.kcal) break;
+    }
     if (data && data.found === true && data.kcal) {
       return res.status(200).json({
         items: normItems([{
