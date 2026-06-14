@@ -277,7 +277,7 @@ function renderDash(){
 }
 
 var picked=[];
-function fileToData(f){return new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){res(fr.result)};fr.onerror=rej;fr.readAsDataURL(f)})}
+function fileToData(f){return new Promise(function(res,rej){var fr=new FileReader();fr.onerror=function(){rej(new Error('画像を読み込めませんでした'))};fr.onload=function(){var src=fr.result;try{var img=new Image();img.onload=function(){try{var MAX=1280;var w=img.naturalWidth||img.width;var h=img.naturalHeight||img.height;if(!w||!h){res(src);return;}var sc=Math.min(1,MAX/Math.max(w,h));var cw=Math.max(1,Math.round(w*sc));var ch=Math.max(1,Math.round(h*sc));var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;var cx=cv.getContext('2d');cx.drawImage(img,0,0,cw,ch);var out=cv.toDataURL('image/jpeg',0.82);res(out&&out.indexOf('data:image/jpeg')===0?out:src);}catch(e){res(src);}};img.onerror=function(){res(src);};img.src=src;}catch(e2){res(src);}};fr.readAsDataURL(f);})}
 function renderThumbs(){var c=$("thumbs");c.innerHTML="";picked.forEach(function(d){var im=new Image();im.src=d;c.appendChild(im)})}
 function uploadImageToStore(dataUrl){try{fetch("/api/upload",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({deviceId:deviceId(),image:dataUrl})}).catch(function(){});}catch(e){}}
 function callAnalyze(payload,tries){
@@ -311,7 +311,7 @@ function analyzePhotos(){
     var html="";var sum={kcal:0,protein_g:0,fat_g:0,carbs_g:0};var any=false;
     rs.forEach(function(x){
       if(x.ok){any=true;var fr=foldItems(x.r,"写真");html+=renderResultItem(fr);sum.kcal+=num(fr.kcal);sum.protein_g+=num(fr.protein_g);sum.fat_g+=num(fr.fat_g);sum.carbs_g+=num(fr.carbs_g);addToday(fr);}
-      else{html+='<div class="err">解析に失敗しました: '+(x.e&&x.e.message||"")+'</div>';}
+      else{var em=(x.e&&x.e.message)||'';if(/did not match|pattern|Load failed|NetworkError|Failed to fetch/i.test(em)){em='画像の処理に失敗しました。別の写真か、もう一度お試しください。';}html+='<div class="err">解析に失敗しました: '+em+'</div>';}
     });
     if(any&&rs.length>1){html='<div class="card" style="background:#f0fdf4"><b>合計</b> '+Math.round(sum.kcal)+'kcal / P'+Math.round(sum.protein_g)+' F'+Math.round(sum.fat_g)+' C'+Math.round(sum.carbs_g)+'g</div>'+html;}
     html='<div class="okbar">✅ 今日の食事に追加しました（「🍽 食事」の合計に反映 ・ 振り返りは「📅 過去の記録」）</div>'+html;$("result").innerHTML=html;picked=[];renderThumbs();
