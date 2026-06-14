@@ -20,11 +20,13 @@ const BARCODE_PROMPT = [
 ].join('\n');
 
 const NAME_PROMPT = [
-'あなたは日本の食品の栄養成分データベースです。次の商品名の商品を特定し、栄養成分(1パッケージ/内容量全量あたり、熱量kcal・たんぱく質・脂質・炭水化物)を返してください。',
+'あなたは日本の食品の栄養成分データベースです。次の商品名の商品を特定し、【その商品の公式な内容量全量（1パッケージ・1本・1袋など、市販の1個分）】あたりの栄養成分(熱量kcal・たんぱく質・脂質・炭水化物)を返してください。',
 '商品名: {NAME}',
-'まずGoogle検索ツールで、この商品名に最も一致する正式な商品の公式栄養成分(メーカー公式・セブン/ローソン/ファミマ等のコンビニ公式)を確認してください。公式値が確認できたら source は "official" とする。',
-'公式値が確認できない場合でも found:false にはせず、同種の一般的な市販品から妥当な推定値を返し、source は "estimate" とする。糖質と食物繊維が別記載なら合算して炭水化物とする。',
-'【出力】説明やマークダウンを付けず、次のJSONのみ: { "found": true, "name": "正式な商品名", "amount": "内容量", "source": "official"または"estimate", "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 }'
+'手順：(1)Google検索ツールで、この商品名に最も一致する正式な商品の公式栄養成分(メーカー公式・セブン/ローソン/ファミマ等のコンビニ公式)を確認する。(2)公式値が確認できたら sourceは"official"。',
+'【量の基準を固定する】必ず「その商品の標準的な販売単位の内容量全量」を基準にする。100gあたり表示しかない場合は、公式の内容量(g/ml)を探して全量に換算する。amountには必ず「内容量(例: 200ml / 60g / 1本)」を明記する。',
+'公式値がどうしても確認できない場合だけ、同種の一般的な市販品の代表的な値(ありていな平均ではなく、その商品カテゴリの典型値)を返し、sourceは"estimate"とする。foundは常にtrue。',
+'糖質と食物繊維が別記載なら合算して炭水化物とする。記憶だけで推測して公式値を上書きしない。',
+'【出力】説明やマークダウンを付けず、次のJSONのみ: { "found": true, "name": "正式な商品名", "amount": "内容量", "source": "official"または"estimate", "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 } 数値は数字のみ小数1桁。'
 ].join('\n');
 
 const IMAGE_PACKAGE_PROMPT = [
@@ -103,6 +105,11 @@ return text;
 function num(n) { return Number(n) || 0; }
 function round1(n) { return Math.round(num(n) * 10) / 10; }
 
+function normName(s) {
+  return String(s || '').normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+globalThis.__nameCache = globalThis.__nameCache || new Map();
+
 function normItems(rawItems, defaultSource) {
 return (rawItems || []).map(function (it) {
 return {
@@ -178,6 +185,10 @@ kcal: data.kcal, protein_g: data.protein_g, fat_g: data.fat_g, carbs_g: data.car
 
 // ===== パッケージ: 商品名テキスト検索 =====
 if (mode === 'package' && productName) {
+    const key = normName(productName);
+    if (globalThis.__nameCache.has(key)) {
+      return res.status(200).json({ items: globalThis.__nameCache.get(key), cached: true });
+    }
     const prompt = NAME_PROMPT.replace('{NAME}', productName);
     let data = null;
     let quotaHit = false;
@@ -196,14 +207,14 @@ if (mode === 'package' && productName) {
     }
     if (data && data.kcal) {
       const src = (data.source === 'official') ? 'name' : 'estimate';
-      return res.status(200).json({
-        items: normItems([{
-          name: data.name || productName, amount: data.amount, source: src,
-          kcal: data.kcal, protein_g: data.protein_g, fat_g: data.fat_g, carbs_g: data.carbs_g
-        }], src)
-      });
+      const items = normItems([{
+        name: data.name || productName, amount: data.amount, source: src,
+        kcal: data.kcal, protein_g: data.protein_g, fat_g: data.fat_g, carbs_g: data.carbs_g
+      }], src);
+      globalThis.__nameCache.set(key, items);
+      return res.status(200).json({ items: items });
     }
-    return res.status(404).json({ error: '「' + productName + '」が見つかりませんでした。商品名を正確に入力するか、写真で試してください。' });
+    return res.status(503).json({ error: '今は検索が混み合っています。少し待ってもう一度お試しください。商品名を正確に入力すると見つかりやすくなります。' });
   }
 
 // ===== 画像解析（パッケージ / 外食）=====
