@@ -33,13 +33,16 @@ export default async function handler(req, res) {
   }
   var body = req.body || {};
   var deviceId = sanitizeId(body.deviceId);
+  var code = sanitizeId(body.code);
+  var kind = (String(body.kind || 'meal') === 'body') ? 'body' : 'meal';
   var image = body.image;
   if (!image) {
     return res.status(400).json({ error: '画像が送信されていません' });
   }
   try {
     var buffer = Buffer.from(image, 'base64');
-    var pathname = deviceId + '/' + tsName();
+    var folder = code ? ('users-photos/' + code + '/' + kind) : deviceId;
+    var pathname = folder + '/' + tsName();
     var result = await put(pathname, buffer, {
       access: 'public',
       contentType: 'image/jpeg',
