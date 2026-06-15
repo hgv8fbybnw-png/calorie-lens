@@ -46,11 +46,25 @@ export default async function handler(req, res) {
   try {
     if (action === 'load') {
       var data = await readUser(code);
-      if (!data) return res.status(200).json({ found: false, targets: {}, log: {}, weight: {}, workout: {}, bodyfat: {}, muscle: {} });
-      return res.status(200).json({ found: true, targets: data.targets || {}, log: data.log || {}, weight: data.weight || {}, workout: data.workout || {}, bodyfat: data.bodyfat || {}, muscle: data.muscle || {} });
+      if (!data) return res.status(200).json({ found: false, targets: {}, log: {}, weight: {}, workout: {}, bodyfat: {}, muscle: {}, sleep: {}, measurements: {}, activityFactor: null, bodyPhotos: [] });
+      return res.status(200).json({ found: true, targets: data.targets || {}, log: data.log || {}, weight: data.weight || {}, workout: data.workout || {}, bodyfat: data.bodyfat || {}, muscle: data.muscle || {}, sleep: data.sleep || {}, measurements: data.measurements || {}, activityFactor: (data.activityFactor != null ? data.activityFactor : null), bodyPhotos: data.bodyPhotos || [] });
     }
     if (action === 'save') {
-      var payload = { targets: body.targets || {}, log: body.log || {}, weight: body.weight || {}, workout: body.workout || {}, bodyfat: body.bodyfat || {}, muscle: body.muscle || {}, updatedAt: Date.now() };
+      var prev = (await readUser(code)) || {};
+      function keep(k, def){ return (body[k] !== undefined && body[k] !== null) ? body[k] : (prev[k] !== undefined ? prev[k] : def); }
+      var payload = {
+        targets: keep("targets", {}),
+        log: keep("log", {}),
+        weight: keep("weight", {}),
+        workout: keep("workout", {}),
+        bodyfat: keep("bodyfat", {}),
+        muscle: keep("muscle", {}),
+        sleep: keep("sleep", {}),
+        measurements: keep("measurements", {}),
+        activityFactor: (body.activityFactor !== undefined ? body.activityFactor : (prev.activityFactor !== undefined ? prev.activityFactor : null)),
+        bodyPhotos: keep("bodyPhotos", []),
+        updatedAt: Date.now()
+      };
       await put(pathFor(code), JSON.stringify(payload), {
         access: 'public',
         contentType: 'application/json',
