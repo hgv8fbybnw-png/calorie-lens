@@ -64,7 +64,7 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #d1fae5;border-top-color:#16a34a;border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
-.chartCard{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}.chartCard h3{margin:0 0 10px;font-size:15px;color:#374151}svg.chart{display:block;width:100%;height:150px}.legend{font-size:11px;color:#6b7280;margin-top:6px}.navTabs{display:flex;gap:6px;margin:14px 0 4px}.navTabs button{flex:1;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 0;font-size:13px;font-weight:700;color:#374151;cursor:pointer}.navTabs button.on{background:#16a34a;color:#fff;border-color:#16a34a}.miniInput{display:flex;gap:8px;align-items:flex-end}.miniInput .col{flex:1}.miniInput button{width:auto;padding:13px 18px;margin-top:0;white-space:nowrap}.list .item{display:flex;justify-content:space-between;border-top:1px solid #eee;padding:8px 0;font-size:13px}.wtNow{font-size:30px;font-weight:800;color:#16a34a}.page{display:none}.page.on{display:block}.histItem{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid #eef2f0;font-size:13px}.histItem .hn{color:#1f2937;font-weight:600}.histItem .ht{color:#16a34a;font-weight:700;margin-right:4px}.histItem .hk{color:#6b7280;white-space:nowrap;font-size:12px}.histDay{margin-bottom:12px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}.histDay .d{background:#f0fdf4;padding:8px 12px;font-weight:800;color:#15803d}.histDay .s{padding:6px 12px;font-size:12px;color:#4b5563}.okbar{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px 12px;border-radius:12px;font-weight:700;font-size:13px;margin:0 0 12px;line-height:1.5}</style>
+.chartCard{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}.chartCard h3{margin:0 0 10px;font-size:15px;color:#374151}svg.chart{display:block;width:100%;height:150px}.legend{font-size:11px;color:#6b7280;margin-top:6px}.navTabs{display:flex;gap:6px;margin:14px 0 4px}.navTabs button{flex:1;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 0;font-size:13px;font-weight:700;color:#374151;cursor:pointer}.navTabs button.on{background:#16a34a;color:#fff;border-color:#16a34a}.miniInput{display:flex;gap:8px;align-items:flex-end}.miniInput .col{flex:1}.miniInput button{width:auto;padding:13px 18px;margin-top:0;white-space:nowrap}.list .item{display:flex;justify-content:space-between;border-top:1px solid #eee;padding:8px 0;font-size:13px}.wtNow{font-size:30px;font-weight:800;color:#16a34a}.bodyNow{display:flex;gap:8px;margin-top:6px}.bodyNow .bn{flex:1;background:#f8faf9;border:1px solid #eef2f0;border-radius:10px;padding:8px;text-align:center}.bodyNow .bnL{display:block;font-size:11px;color:#6b7280}.bodyNow .bnV{display:block;font-size:16px;font-weight:800;color:#16a34a;margin-top:2px}.page{display:none}.page.on{display:block}.histItem{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid #eef2f0;font-size:13px}.histItem .hn{color:#1f2937;font-weight:600}.histItem .ht{color:#16a34a;font-weight:700;margin-right:4px}.histItem .hk{color:#6b7280;white-space:nowrap;font-size:12px}.histItem .hn{flex:1;min-width:0}.histDel{flex:none;border:none;background:#fef2f2;color:#dc2626;width:26px;height:26px;border-radius:8px;font-size:13px;line-height:1;cursor:pointer;font-weight:700}.histDel:active{background:#fee2e2}.histDay{margin-bottom:12px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}.histDay .d{background:#f0fdf4;padding:8px 12px;font-weight:800;color:#15803d}.histDay .s{padding:6px 12px;font-size:12px;color:#4b5563}.okbar{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px 12px;border-radius:12px;font-weight:700;font-size:13px;margin:0 0 12px;line-height:1.5}</style>
 </head>
 <body>
 
@@ -140,14 +140,19 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 
 <div class="page" id="pageWeight">
   <div class="card">
-    <div style="font-weight:600;margin-bottom:4px">現在の体重</div>
-    <div class="wtNow" id="wtNow">— kg</div>
-    <div class="miniInput" style="margin-top:12px">
-      <div class="col"><label class="fld">今日の体重 (kg)</label><input type="number" id="wtInput" step="0.1" inputmode="decimal" placeholder="例: 62.5"></div>
-      <button class="btn" id="wtSave" style="margin-top:0">記録</button>
+    <div style="font-weight:600;margin-bottom:8px">今日の記録</div>
+    <div class="bodyNow">
+      <div class="bn"><span class="bnL">体重</span><span class="bnV" id="wtNow">— kg</span></div>
+      <div class="bn"><span class="bnL">体脂肪率</span><span class="bnV" id="bfNow">— %</span></div>
+      <div class="bn"><span class="bnL">筋肉量</span><span class="bnV" id="musNow">— kg</span></div>
     </div>
+    <div class="col" style="margin-top:12px"><label class="fld">体重 (kg)</label><input type="number" id="wtInput" step="0.1" inputmode="decimal" placeholder="例: 62.5"></div>
+    <div class="col" style="margin-top:8px"><label class="fld">体脂肪率 (%)</label><input type="number" id="bfInput" step="0.1" inputmode="decimal" placeholder="例: 18.0"></div>
+    <div class="col" style="margin-top:8px"><label class="fld">筋肉量 (kg)</label><input type="number" id="musInput" step="0.1" inputmode="decimal" placeholder="例: 50.0"></div>
+    <button class="btn" id="wtSave" style="margin-top:12px">記録する</button>
+    <div class="muted" style="font-size:11px;margin-top:6px">入力した項目だけ記録されます（空欄はOK）。</div>
   </div>
-  <div class="chartCard"><h3>体重の推移</h3><svg class="chart" id="wtChart"></svg><div class="legend">直近30日</div></div>
+<div class="chartCard"><h3>体重の推移</h3><svg class="chart" id="wtChart"></svg><div class="legend">直近30日</div></div>
   <div class="card"><div style="font-weight:600;margin-bottom:4px">体重ログ</div><div class="list" id="wtList"></div></div>
 </div>
 
@@ -208,7 +213,7 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 <script>
 (function(){
 "use strict";
-var LS={dev:"cl_device_id_v1",sync:"cl_sync_code_v1",log:"cl_log_v1",tg:"cl_targets_v1",wt:"cl_weight_v1",wo:"cl_workout_v1"};
+var LS={dev:"cl_device_id_v1",sync:"cl_sync_code_v1",log:"cl_log_v1",tg:"cl_targets_v1",wt:"cl_weight_v1",wo:"cl_workout_v1",bf:"cl_bodyfat_v1",mus:"cl_muscle_v1"};
 var $=function(id){return document.getElementById(id)};
 function getJSON(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function setJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -221,6 +226,10 @@ function getLog(){return getJSON(LS.log,{})}
 function setLog(l){setJSON(LS.log,l)}
 function getWeight(){return getJSON(LS.wt,{})}
 function setWeight(w){setJSON(LS.wt,w)}
+function getBodyfat(){return getJSON(LS.bf,{})}
+function setBodyfat(w){setJSON(LS.bf,w)}
+function getMuscle(){return getJSON(LS.mus,{})}
+function setMuscle(w){setJSON(LS.mus,w)}
 function getWorkout(){return getJSON(LS.wo,{})}
 function setWorkout(w){setJSON(LS.wo,w)}
 function todayStr(){var d=new Date();var m=("0"+(d.getMonth()+1)).slice(-2);var day=("0"+d.getDate()).slice(-2);return d.getFullYear()+"-"+m+"-"+day}
@@ -231,7 +240,7 @@ function api(action,extra){
   return fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()});
 }
 var saveTimer=null;
-function pushToServer(){if(!getCode())return Promise.resolve();return api("save",{targets:getTargets(),log:getLog(),weight:getWeight(),workout:getWorkout()}).catch(function(){})}
+function pushToServer(){if(!getCode())return Promise.resolve();return api("save",{targets:getTargets(),log:getLog(),weight:getWeight(),workout:getWorkout(),bodyfat:getBodyfat(),muscle:getMuscle()}).catch(function(){})}
 function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(pushToServer,800)}
 function mergeLog(server){
   var local=getLog();var out={};var days={};var k;
@@ -247,7 +256,7 @@ function mergeWeight(server){var local=getWeight();var out={};var k;for(k in loc
 function pullFromServer(){
   if(!getCode())return Promise.resolve(false);
   return api("load",{}).then(function(j){
-    if(j&&j.found){if(j.targets)setTargets(j.targets);if(j.log)setLog(mergeLog(j.log));if(j.weight)setWeight(mergeWeight(j.weight));if(j.workout)setWorkout(mergeLog(j.workout));}
+    if(j&&j.found){if(j.targets)setTargets(j.targets);if(j.log)setLog(mergeLog(j.log));if(j.weight)setWeight(mergeWeight(j.weight));if(j.workout)setWorkout(mergeLog(j.workout));if(j.bodyfat)setBodyfat(mergeWeight(j.bodyfat));if(j.muscle)setMuscle(mergeWeight(j.muscle));}
     return true;
   }).catch(function(){return false});
 }
@@ -256,6 +265,7 @@ function todayEntries(){return getLog()[todayStr()]||[]}
 function totalsFor(arr){var t={kcal:0,protein_g:0,fat_g:0,carbs_g:0};arr.forEach(function(e){t.kcal+=num(e.kcal);t.protein_g+=num(e.protein_g);t.fat_g+=num(e.fat_g);t.carbs_g+=num(e.carbs_g)});return t}
 function addToday(item){var l=getLog();var d=todayStr();if(!l[d])l[d]=[];l[d].push({name:item.name||"記録",kcal:r1(item.kcal),protein_g:r1(item.protein_g),fat_g:r1(item.fat_g),carbs_g:r1(item.carbs_g),t:Date.now()});setLog(l);scheduleSave();renderDash()}
 function undoLast(){var l=getLog();var d=todayStr();if(l[d]&&l[d].length){l[d].pop();setLog(l);scheduleSave();renderDash()}}
+function deleteLogItem(date,ts){var l=getLog();var arr=l[date];if(!arr)return;ts=Number(ts);var idx=-1;for(var i=0;i<arr.length;i++){if(Number(arr[i].t)===ts){idx=i;break;}}if(idx<0)return;arr.splice(idx,1);if(!arr.length)delete l[date];setLog(l);scheduleSave();renderDash();openHistory();}
 function clearToday(){var l=getLog();l[todayStr()]=[];setLog(l);scheduleSave();renderDash()}
 function pct(a,b){if(!b)return 0;return Math.max(0,Math.min(100,Math.round(a/b*100)))}
 function renderDash(){
@@ -342,7 +352,7 @@ function saveTargetsFromForm(){
 }
 var goalPresets={cut:{kcal:1600,protein_g:130,fat_g:45,carbs_g:160},keep:{kcal:2000,protein_g:120,fat_g:55,carbs_g:240},gain:{kcal:2600,protein_g:160,fat_g:70,carbs_g:330}};
 function applyGoal(k){var g=goalPresets[k];$("t_kcal").value=g.kcal;$("t_p").value=g.protein_g;$("t_f").value=g.fat_g;$("t_c").value=g.carbs_g;}
-function openHistory(){var log=getLog();var tg=getTargets();var days=Object.keys(log).sort().reverse();var html="";if(!days.length)html='<p class="muted">まだ記録がありません。</p>';days.forEach(function(d){var t=totalsFor(log[d]);var items=log[d];html+='<div class="histDay"><div class="d">'+d+'</div>';html+='<div class="s">'+Math.round(t.kcal)+' / '+Math.round(num(tg.kcal))+' kcal ・ P'+Math.round(t.protein_g)+' F'+Math.round(t.fat_g)+' C'+Math.round(t.carbs_g)+'g ・ '+items.length+'件</div>';items.forEach(function(it){var tm="";try{var dt=new Date(it.t);tm=("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2);}catch(e){}html+='<div class="histItem"><div class="hn">'+(tm?'<span class="ht">'+tm+'</span> ':'')+(it.name||"食品")+'</div><div class="hk">'+Math.round(num(it.kcal))+' kcal ・ P'+Math.round(num(it.protein_g))+' F'+Math.round(num(it.fat_g))+' C'+Math.round(num(it.carbs_g))+'g</div></div>';});html+='</div>';});$("histList").innerHTML=html;$("history").classList.add("show");}
+function openHistory(){var log=getLog();var tg=getTargets();var days=Object.keys(log).sort().reverse();var html="";if(!days.length)html='<p class="muted">まだ記録がありません。</p>';days.forEach(function(d){var t=totalsFor(log[d]);var items=log[d];html+='<div class="histDay"><div class="d">'+d+'</div>';html+='<div class="s">'+Math.round(t.kcal)+' / '+Math.round(num(tg.kcal))+' kcal ・ P'+Math.round(t.protein_g)+' F'+Math.round(t.fat_g)+' C'+Math.round(t.carbs_g)+'g ・ '+items.length+'件</div>';items.forEach(function(it){var tm="";try{var dt=new Date(it.t);tm=("0"+dt.getHours()).slice(-2)+":"+("0"+dt.getMinutes()).slice(-2);}catch(e){}html+='<div class="histItem">'+'<div class="hn">'+(tm?'<span class="ht">'+tm+'</span> ':'')+(it.name||"食品")+'</div>'+'<div class="hk">'+Math.round(num(it.kcal))+' kcal ・ P'+Math.round(num(it.protein_g))+' F'+Math.round(num(it.fat_g))+' C'+Math.round(num(it.carbs_g))+'g</div>'+'<button class="histDel" data-d="'+d+'" data-t="'+(it.t||0)+'" title="削除" aria-label="削除">✕</button>'+'</div>';});html+='</div>';});$("histList").innerHTML=html;$("history").classList.add("show");}
 function setMode(m){
   curMode=m;
   $("tabPkg").classList.toggle("on",m==="pkg");$("tabEat").classList.toggle("on",m==="eat");$("tabCook").classList.toggle("on",m==="cook");
@@ -377,8 +387,8 @@ function drawBars(id,data,color,goal){var D=chartDims(id);var w=D.w,h=D.h,pad=D.
 
 // weight/workout
 function lastNDates(nn){var arr=[];var d=new Date();for(var i=nn-1;i>=0;i--){var x=new Date(d.getTime()-i*86400000);var m=("0"+(x.getMonth()+1)).slice(-2);var day=("0"+x.getDate()).slice(-2);arr.push(x.getFullYear()+"-"+m+"-"+day);}return arr;}
-function saveWeight(){var v=num($("wtInput").value);if(!v){return;}var w=getWeight();w[todayStr()]=v;setWeight(w);scheduleSave();$("wtInput").value="";renderWeight();renderGraphs();}
-function renderWeight(){var w=getWeight();var dates=Object.keys(w).sort();var latest=dates.length?w[dates[dates.length-1]]:null;$("wtNow").textContent=latest!=null?(latest+" kg"):"— kg";var html="";dates.slice().reverse().forEach(function(d){html+='<div class="item"><span>'+d+'</span><span>'+w[d]+' kg</span></div>';});$("wtList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';drawLine("wtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#16a34a");}
+function saveWeight(){var d=todayStr();var changed=false;var v=num($("wtInput").value);if(v){var w=getWeight();w[d]=v;setWeight(w);changed=true;}var bf=num($("bfInput").value);if(bf){var b=getBodyfat();b[d]=bf;setBodyfat(b);changed=true;}var mu=num($("musInput").value);if(mu){var m=getMuscle();m[d]=mu;setMuscle(m);changed=true;}if(!changed){return;}scheduleSave();$("wtInput").value="";$("bfInput").value="";$("musInput").value="";renderWeight();renderGraphs();}
+function renderWeight(){var w=getWeight();var bf=getBodyfat();var mu=getMuscle();function latestOf(o){var ks=Object.keys(o).sort();return ks.length?o[ks[ks.length-1]]:null;}var lw=latestOf(w),lb=latestOf(bf),lm=latestOf(mu);$("wtNow").textContent=(lw!=null)?(lw+" kg"):"— kg";if($("bfNow"))$("bfNow").textContent=(lb!=null)?(lb+" %"):"— %";if($("musNow"))$("musNow").textContent=(lm!=null)?(lm+" kg"):"— kg";var days={};var k;for(k in w)days[k]=1;for(k in bf)days[k]=1;for(k in mu)days[k]=1;var ds=Object.keys(days).sort().reverse();var html="";ds.forEach(function(d){var parts=[];if(d in w)parts.push(w[d]+" kg");if(d in bf)parts.push("体脂"+bf[d]+"%");if(d in mu)parts.push("筋肉"+mu[d]+"kg");html+='<div class="item"><span>'+d+'</span><span>'+parts.join(" ・ ")+'</span></div>';});$("wtList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';drawLine("wtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#16a34a");}
 function saveWorkout(){var name=$("woName").value.trim();if(!name){return;}var min=num($("woMin").value);var kcal=num($("woKcal").value);var wo=getWorkout();var d=todayStr();if(!wo[d])wo[d]=[];wo[d].push({name:name,min:min,kcal:kcal,t:Date.now()});setWorkout(wo);scheduleSave();$("woName").value="";$("woMin").value="";$("woKcal").value="";renderWorkout();renderGraphs();}
 function workoutMinByDay(){var wo=getWorkout();var o={};for(var d in wo){var s=0;(wo[d]||[]).forEach(function(e){s+=num(e.min);});o[d]=s;}return o;}
 function renderWorkout(){var wo=getWorkout();var dates=Object.keys(wo).sort().reverse();var html="";dates.forEach(function(d){(wo[d]||[]).slice().reverse().forEach(function(e){html+='<div class="item"><span>'+d+' '+e.name+'</span><span>'+(e.min?e.min+'分':'')+(e.kcal?' / '+e.kcal+'kcal':'')+'</span></div>';});});$("woList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';var mbd=workoutMinByDay();drawBars("woChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#16a34a");}
@@ -434,6 +444,7 @@ function wire(){
   $("goalKeep").addEventListener("click",function(){applyGoal("keep")});
   $("goalGain").addEventListener("click",function(){applyGoal("gain")});
   $("openHistory").addEventListener("click",openHistory);
+  $("histList").addEventListener("click",function(e){var b=e.target.closest&&e.target.closest(".histDel");if(b){e.preventDefault();if(confirm("この記録を削除しますか？")){deleteLogItem(b.getAttribute("data-d"),b.getAttribute("data-t"));}}});
   $("closeHistory").addEventListener("click",function(){$("history").classList.remove("show")});
   $("undoLast").addEventListener("click",undoLast);
   $("resetDay").addEventListener("click",function(){if(confirm("今日の記録をすべて消しますか？"))clearToday()});
