@@ -271,7 +271,7 @@ function pullFromServer(){
 
 function todayEntries(){return getLog()[todayStr()]||[]}
 function totalsFor(arr){var t={kcal:0,protein_g:0,fat_g:0,carbs_g:0};arr.forEach(function(e){t.kcal+=num(e.kcal);t.protein_g+=num(e.protein_g);t.fat_g+=num(e.fat_g);t.carbs_g+=num(e.carbs_g)});return t}
-function addToday(item){var l=getLog();var d=todayStr();if(!l[d])l[d]=[];var ts=Date.now();l[d].push({name:item.name||"記録",kcal:r1(item.kcal),protein_g:r1(item.protein_g),fat_g:r1(item.fat_g),carbs_g:r1(item.carbs_g),t:ts});setLog(l);scheduleSave();renderDash();return ts;}
+function addToday(item){var l=getLog();var d=todayStr();if(!l[d])l[d]=[];var ts=Date.now();var e={name:item.name||"記録",kcal:r1(item.kcal),protein_g:r1(item.protein_g),fat_g:r1(item.fat_g),carbs_g:r1(item.carbs_g),t:ts};if(item.photoUrl)e.photoUrl=item.photoUrl;l[d].push(e);setLog(l);scheduleSave();renderDash();return ts;}
 function undoLast(){var l=getLog();var d=todayStr();if(l[d]&&l[d].length){l[d].pop();setLog(l);scheduleSave();renderDash()}}
 function deleteLogItem(date,ts){var l=getLog();var arr=l[date];if(!arr)return;ts=Number(ts);var idx=-1;for(var i=0;i<arr.length;i++){if(Number(arr[i].t)===ts){idx=i;break;}}if(idx<0)return;arr.splice(idx,1);if(!arr.length)delete l[date];setLog(l);scheduleSave();renderDash();openHistory();}
 function clearToday(){var l=getLog();l[todayStr()]=[];setLog(l);scheduleSave();renderDash()}
@@ -297,7 +297,15 @@ function saveSleep(){var h=Math.max(0,Math.round(num($("sleepH").value)));var m=
 var picked=[];
 function fileToData(f){return new Promise(function(res,rej){var fr=new FileReader();fr.onerror=function(){rej(new Error('画像を読み込めませんでした'))};fr.onload=function(){var src=fr.result;try{var img=new Image();img.onload=function(){try{var MAX=1280;var w=img.naturalWidth||img.width;var h=img.naturalHeight||img.height;if(!w||!h){res(src);return;}var sc=Math.min(1,MAX/Math.max(w,h));var cw=Math.max(1,Math.round(w*sc));var ch=Math.max(1,Math.round(h*sc));var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;var cx=cv.getContext('2d');cx.drawImage(img,0,0,cw,ch);var out=cv.toDataURL('image/jpeg',0.82);res(out&&out.indexOf('data:image/jpeg')===0?out:src);}catch(e){res(src);}};img.onerror=function(){res(src);};img.src=src;}catch(e2){res(src);}};fr.readAsDataURL(f);})}
 function renderThumbs(){var c=$("thumbs");c.innerHTML="";picked.forEach(function(d){var im=new Image();im.src=d;c.appendChild(im)})}
-function uploadImageToStore(dataUrl){try{fetch("/api/upload",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({deviceId:deviceId(),image:dataUrl})}).catch(function(){});}catch(e){}}
+function uploadImageToStore(dataUrl){
+  try{
+    return fetch("/api/upload",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({deviceId:deviceId(),code:getCode(),image:dataUrl})})
+      .then(function(r){return r.json();})
+      .then(function(j){return (j&&j.url)?j.url:null;})
+      .catch(function(){return null;});
+  }catch(e){return Promise.resolve(null);}
+}
+
 function callAnalyze(payload,tries){
   tries=tries||0;
   return fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
@@ -325,14 +333,16 @@ function recalcResultTotal(){var rows=document.querySelectorAll("#result .resite
 function analyzePhotos(){
   if(!picked.length){$("result").innerHTML='<div class="err">写真を選んでください</div>';return}
   $("goPhoto").disabled=true;$("result").innerHTML='<div class="hint"><span class="spin"></span>解析中…</div>';
-  picked.forEach(function(d){uploadImageToStore(d)});
-  var jobs=picked.map(function(d){return callAnalyze({mode:apiMode(curMode),image:d})});
-  Promise.all(jobs.map(function(p){return p.then(function(r){return {ok:1,r:r}}).catch(function(e){return {ok:0,e:e}})}))
-  .then(function(rs){
-    var html="";var sum={kcal:0,protein_g:0,fat_g:0,carbs_g:0};var any=false;var itemCount=0;
-    rs.forEach(function(x){
-      if(x.ok){any=true;var fr=foldItems(x.r,"写真");var its=(fr.items&&fr.items.length)?fr.items:[fr];its.forEach(function(it){var ts=addToday(it);html+=renderResultItemRow(it,ts);sum.kcal+=num(it.kcal);sum.protein_g+=num(it.protein_g);sum.fat_g+=num(it.fat_g);sum.carbs_g+=num(it.carbs_g);itemCount++;});}
-      else{var em=(x.e&&x.e.message)||'';if(/did not match|pattern|Load failed|NetworkError|Failed to fetch/i.test(em)){em='画像の処理に失敗しました。別の写真か、もう一度お試しください。';}html+='<div class="err">解析に失敗しました: '+em+'</div>';}
+  var photoList=picked.slice();
+  var uploadJobs=photoList.map(function(d){return uploadImageToStore(d);});
+  var jobs=photoList.map(function(d){return callAnalyze({mode:apiMode(curMode),image:d})});
+  Promise.all([Promise.all(uploadJobs.map(function(p){return p.then(function(u){return u;}).catch(function(){return null;})})), Promise.all(jobs.map(function(p){return p.then(function(r){return {ok:1,r:r}}).catch(function(e){return {ok:0,e:e}})}))])
+  .then(function(pair){
+    var urls=pair[0]; var rs=pair[1];
+    var html='';var sum={kcal:0,protein_g:0,fat_g:0,carbs_g:0};var any=false;var itemCount=0;
+    rs.forEach(function(x,k){
+      if(x.ok){any=true;var fr=foldItems(x.r,"写真");var its=(fr.items&&fr.items.length)?fr.items:[fr];its.forEach(function(it){if(urls&&urls[k])it.photoUrl=urls[k];var ts=addToday(it);html+=renderResultItemRow(it,ts);sum.kcal+=num(it.kcal);sum.protein_g+=num(it.protein_g);sum.fat_g+=num(it.fat_g);sum.carbs_g+=num(it.carbs_g);itemCount++;});}
+      else{var em=(x.e&&x.e.message)||"";if(/did not match|pattern|Load failed|NetworkError|Failed to fetch/i.test(em)){em="画像の処理に失敗しました。別の写真か、もう一度お試しください。";}html+='<div class="err">解析に失敗しました: '+em+'</div>';}
     });
     html='<div class="card" id="resultTotal" style="background:#f0fdf4;display:'+(itemCount>1?'':'none')+'"><b>合計</b> '+Math.round(sum.kcal)+'kcal / P'+Math.round(sum.protein_g)+' F'+Math.round(sum.fat_g)+' C'+Math.round(sum.carbs_g)+'g</div>'+html;
     html='<div class="okbar">✅ 今日の食事に追加しました（「🍽 食事」の合計に反映 ・ 振り返りは「📅 過去の記録」）</div>'+html;$("result").innerHTML=html;picked=[];renderThumbs();
