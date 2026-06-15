@@ -49,7 +49,7 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 .result{margin-top:14px}
 .err{color:#dc2626;font-weight:600;line-height:1.6}
 .ing{display:flex;gap:8px;margin-top:8px}
-.ing input{flex:1}
+.ing{align-items:center}.ing .ingN{flex:1;min-width:0}.ing .ingU{padding:11px 6px;border:1.5px solid #d1d5db;border-radius:12px;font-size:15px;background:#fff;flex:none}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:24px 14px;z-index:50;overflow:auto}
 .modal.show{display:flex}
 .sheet{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:20px}
@@ -131,6 +131,7 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 
   <div class="card" id="homeCard" style="display:none">
     <div style="font-weight:600;margin-bottom:6px">材料を入力してください</div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">分量と単位（g・個・本・枚 など）を選べます。個数で入れると自動でグラム換算して計算します。</div>
     <div id="ingredients"></div>
     <button class="btn ghost" id="addRow">＋ 材料を追加</button>
     <button class="btn" id="goHome">カロリーを計算する</button>
@@ -153,6 +154,8 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
     <div class="muted" style="font-size:11px;margin-top:6px">入力した項目だけ記録されます（空欄はOK）。</div>
   </div>
 <div class="chartCard"><h3>体重の推移</h3><svg class="chart" id="wtChart"></svg><div class="legend">直近30日</div></div>
+<div class="chartCard"><h3>体脂肪率の推移</h3><svg class="chart" id="bfChart"></svg><div class="legend">直近30日（%）</div></div>
+<div class="chartCard"><h3>筋肉量の推移</h3><svg class="chart" id="musChart"></svg><div class="legend">直近30日（kg）</div></div>
   <div class="card"><div style="font-weight:600;margin-bottom:4px">体重ログ</div><div class="list" id="wtList"></div></div>
 </div>
 
@@ -174,6 +177,8 @@ input[type=text],input[type=number]{width:100%;padding:13px;border:1.5px solid #
 <div class="page" id="pageGraph">
   <div class="chartCard"><h3>摂取カロリー（kcal／日）</h3><svg class="chart" id="calChart"></svg><div class="legend">直近30日・点線は目標</div></div>
   <div class="chartCard"><h3>体重(kg)</h3><svg class="chart" id="gWtChart"></svg></div>
+<div class="chartCard"><h3>体脂肪率(%)</h3><svg class="chart" id="gBfChart"></svg></div>
+<div class="chartCard"><h3>筋肉量(kg)</h3><svg class="chart" id="gMusChart"></svg></div>
   <div class="chartCard"><h3>トレーニング時間(分)</h3><svg class="chart" id="gWoChart"></svg></div>
 </div>
 
@@ -327,15 +332,16 @@ function analyzePhotos(){
     html='<div class="okbar">✅ 今日の食事に追加しました（「🍽 食事」の合計に反映 ・ 振り返りは「📅 過去の記録」）</div>'+html;$("result").innerHTML=html;picked=[];renderThumbs();
   }).then(function(){$("goPhoto").disabled=false});
 }
-function addIngredientRow(name,grams){
+function addIngredientRow(name,grams,unit){
   var wrap=$("ingredients");var div=document.createElement("div");div.className="ing";
-  div.innerHTML='<input type="text" placeholder="材料名 (例: 鶏むね肉)" value="'+(name||"")+'"><input type="number" placeholder="g" style="max-width:90px" value="'+(grams||"")+'">';
+  div.innerHTML='<input type="text" class="ingN" placeholder="材料名 (例: 鶏むね肉)" value="'+(name||"")+'"><input type="number" class="ingQ" inputmode="decimal" placeholder="数量" style="max-width:72px" value="'+(grams||"")+'"><select class="ingU"><option value="g">g</option><option value="個">個</option><option value="切れ">切れ</option><option value="枚">枚</option><option value="本">本</option><option value="杯">杯</option><option value="ml">ml</option></select>';
+  if(unit){var u=div.querySelector(".ingU");if(u){for(var _i=0;_i<u.options.length;_i++){if(u.options[_i].value===unit){u.selectedIndex=_i;break;}}}}
   wrap.appendChild(div);
 }
 function analyzeHome(){
   var R="resultHome";
   var rows=[].slice.call($("ingredients").querySelectorAll(".ing"));
-  var ings=rows.map(function(r){var i=r.querySelectorAll("input");return {name:i[0].value,quantity:num(i[1].value),unit:"g"}}).filter(function(x){return x.name});
+  var ings=rows.map(function(r){var n=r.querySelector(".ingN");var qn=r.querySelector(".ingQ");var un=r.querySelector(".ingU");return {name:n?n.value:"",quantity:num(qn?qn.value:0),unit:un?un.value:"g"}}).filter(function(x){return x.name});
   if(!ings.length){$(R).innerHTML='<div class="err">材料を入力してください</div>';return}
   $("goHome").disabled=true;$(R).innerHTML='<div class="hint"><span class="spin"></span>計算中…</div>';
   callAnalyze({mode:"home",ingredients:ings}).then(function(j){var fr=foldItems(j,"自炊");$(R).innerHTML=renderResultItem(fr);addToday(fr);})
@@ -388,12 +394,12 @@ function drawBars(id,data,color,goal){var D=chartDims(id);var w=D.w,h=D.h,pad=D.
 // weight/workout
 function lastNDates(nn){var arr=[];var d=new Date();for(var i=nn-1;i>=0;i--){var x=new Date(d.getTime()-i*86400000);var m=("0"+(x.getMonth()+1)).slice(-2);var day=("0"+x.getDate()).slice(-2);arr.push(x.getFullYear()+"-"+m+"-"+day);}return arr;}
 function saveWeight(){var d=todayStr();var changed=false;var v=num($("wtInput").value);if(v){var w=getWeight();w[d]=v;setWeight(w);changed=true;}var bf=num($("bfInput").value);if(bf){var b=getBodyfat();b[d]=bf;setBodyfat(b);changed=true;}var mu=num($("musInput").value);if(mu){var m=getMuscle();m[d]=mu;setMuscle(m);changed=true;}if(!changed){return;}scheduleSave();$("wtInput").value="";$("bfInput").value="";$("musInput").value="";renderWeight();renderGraphs();}
-function renderWeight(){var w=getWeight();var bf=getBodyfat();var mu=getMuscle();function latestOf(o){var ks=Object.keys(o).sort();return ks.length?o[ks[ks.length-1]]:null;}var lw=latestOf(w),lb=latestOf(bf),lm=latestOf(mu);$("wtNow").textContent=(lw!=null)?(lw+" kg"):"— kg";if($("bfNow"))$("bfNow").textContent=(lb!=null)?(lb+" %"):"— %";if($("musNow"))$("musNow").textContent=(lm!=null)?(lm+" kg"):"— kg";var days={};var k;for(k in w)days[k]=1;for(k in bf)days[k]=1;for(k in mu)days[k]=1;var ds=Object.keys(days).sort().reverse();var html="";ds.forEach(function(d){var parts=[];if(d in w)parts.push(w[d]+" kg");if(d in bf)parts.push("体脂"+bf[d]+"%");if(d in mu)parts.push("筋肉"+mu[d]+"kg");html+='<div class="item"><span>'+d+'</span><span>'+parts.join(" ・ ")+'</span></div>';});$("wtList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';drawLine("wtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#16a34a");}
+function renderWeight(){var w=getWeight();var bf=getBodyfat();var mu=getMuscle();function latestOf(o){var ks=Object.keys(o).sort();return ks.length?o[ks[ks.length-1]]:null;}var lw=latestOf(w),lb=latestOf(bf),lm=latestOf(mu);$("wtNow").textContent=(lw!=null)?(lw+" kg"):"— kg";if($("bfNow"))$("bfNow").textContent=(lb!=null)?(lb+" %"):"— %";if($("musNow"))$("musNow").textContent=(lm!=null)?(lm+" kg"):"— kg";var days={};var k;for(k in w)days[k]=1;for(k in bf)days[k]=1;for(k in mu)days[k]=1;var ds=Object.keys(days).sort().reverse();var html="";ds.forEach(function(d){var parts=[];if(d in w)parts.push(w[d]+" kg");if(d in bf)parts.push("体脂"+bf[d]+"%");if(d in mu)parts.push("筋肉"+mu[d]+"kg");html+='<div class="item"><span>'+d+'</span><span>'+parts.join(" ・ ")+'</span></div>';});$("wtList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';drawLine("wtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#16a34a");drawLine("bfChart",lastNDates(30).map(function(d){return {x:d,y:(d in bf)?bf[d]:null};}),"#f59e0b");drawLine("musChart",lastNDates(30).map(function(d){return {x:d,y:(d in mu)?mu[d]:null};}),"#7c3aed");}
 function saveWorkout(){var name=$("woName").value.trim();if(!name){return;}var min=num($("woMin").value);var kcal=num($("woKcal").value);var wo=getWorkout();var d=todayStr();if(!wo[d])wo[d]=[];wo[d].push({name:name,min:min,kcal:kcal,t:Date.now()});setWorkout(wo);scheduleSave();$("woName").value="";$("woMin").value="";$("woKcal").value="";renderWorkout();renderGraphs();}
 function workoutMinByDay(){var wo=getWorkout();var o={};for(var d in wo){var s=0;(wo[d]||[]).forEach(function(e){s+=num(e.min);});o[d]=s;}return o;}
 function renderWorkout(){var wo=getWorkout();var dates=Object.keys(wo).sort().reverse();var html="";dates.forEach(function(d){(wo[d]||[]).slice().reverse().forEach(function(e){html+='<div class="item"><span>'+d+' '+e.name+'</span><span>'+(e.min?e.min+'分':'')+(e.kcal?' / '+e.kcal+'kcal':'')+'</span></div>';});});$("woList").innerHTML=html||'<p class="muted">まだ記録がありません。</p>';var mbd=workoutMinByDay();drawBars("woChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#16a34a");}
 function calByDay(){var log=getLog();var o={};for(var d in log){var s=0;(log[d]||[]).forEach(function(e){s+=num(e.kcal);});o[d]=s;}return o;}
-function renderGraphs(){var cbd=calByDay();var tg=getTargets();drawBars("calChart",lastNDates(30).map(function(d){return {x:d,y:cbd[d]||0};}),"#16a34a",num(tg.kcal));var w=getWeight();drawLine("gWtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#2563eb");var mbd=workoutMinByDay();drawBars("gWoChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#f59e0b");}
+function renderGraphs(){var cbd=calByDay();var tg=getTargets();drawBars("calChart",lastNDates(30).map(function(d){return {x:d,y:cbd[d]||0};}),"#16a34a",num(tg.kcal));var w=getWeight();drawLine("gWtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#2563eb");var bf=getBodyfat();var mu=getMuscle();drawLine("gBfChart",lastNDates(30).map(function(d){return {x:d,y:(d in bf)?bf[d]:null};}),"#f59e0b");drawLine("gMusChart",lastNDates(30).map(function(d){return {x:d,y:(d in mu)?mu[d]:null};}),"#7c3aed");var mbd=workoutMinByDay();drawBars("gWoChart",lastNDates(30).map(function(d){return {x:d,y:mbd[d]||0};}),"#f59e0b");}
 function searchByName(){
   var q=($("nameInput").value||"").trim();
   if(!q){$("nameResult").innerHTML='<div class="err">商品名を入力してください</div>';return;}
