@@ -36,15 +36,17 @@ const IMAGE_PACKAGE_PROMPT = [
 '3. 写真に栄養成分表示が写っている場合は裏取りに使い、検索で取れない項目だけ印字値で補う。その場合 source を "label"。',
 '4. 糖質+食物繊維は合算して炭水化物。基準量を確認し内容量から全量換算する。記憶や見た目の推定で公式値を上書きしない。',
 '5. 複数の品があればすべて個別itemに。写っていない物は追加しない。',
-'【出力】説明やマークダウンを付けず、次のJSONのみ: { "items": [ { "name": "商品名", "amount": "量", "source": "official または label", "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 } ] } 数値は数字のみ小数1桁。'
+'5-2. 【個数を数える】同じ商品が複数個写っている場合(例: 同じおにぎり2個、缶コーヒー3本)は、その個数を正確に数えて qty に入れる。kcalやPFCは「1個あたり」の値を入れ、qtyはその個数とする（1個ならqtyは1）。',
+'【出力】説明やマークダウンを付けず、次のJSONのみ: { "items": [ { "name": "商品名", "amount": "量", "source": "official または label", "qty": 数値, "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 } ] } kcal/PFCは1個あたり、qtyは個数。数値は数字のみ小数1桁。'
 ].join('\n');
 
 const IMAGE_EATOUT_PROMPT = [
 'あなたは日本の食品の栄養成分に精通した管理栄養士です。写真の外食・料理の栄養情報(カロリーとPFC)を、日本の一般的な実数値に近い現実的な値で推定してください。Google検索ツールを使えます。',
 '1. 料理名を判定し、一般的な提供量・見た目の量からカロリーとPFCを推定する。チェーン店等で公式値が分かる場合は検索して使う。',
 '2. 複数の品があればすべて個別itemに。写っていない物は追加しない。',
+'2-2. 【個数を数える】同じ料理が複数写っている場合(例: 串カツて2本、餡を3個)は、その個数を数えて qty に入れる。kcalやPFCは「1個(1人前)あたり」の値とし、qtyは個数とする（1個ならqtyは1）。',
 '3. source は、公式値を確認できたものは "official"、推定は "estimate"。',
-'【出力】説明やマークダウンを付けず、次のJSONのみ: { "items": [ { "name": "料理名", "amount": "量", "source": "official または estimate", "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 } ] } 数値は数字のみ小数1桁。'
+'【出力】説明やマークダウンを付けず、次のJSONのみ: { "items": [ { "name": "料理名", "amount": "量", "source": "official または estimate", "qty": 数値, "kcal": 数値, "protein_g": 数値, "fat_g": 数値, "carbs_g": 数値 } ] } kcal/PFCは1個あたり、qtyは個数。数値は数字のみ小数1桁。'
 ].join('\n');
 
 const HOME_PROMPT = [
@@ -112,14 +114,21 @@ globalThis.__nameCache = globalThis.__nameCache || new Map();
 
 function normItems(rawItems, defaultSource) {
 return (rawItems || []).map(function (it) {
+var q = Math.round(num(it.qty));
+if (!q || q < 1) q = 1;
+var nm = it.name || '不明';
+if (q > 1) nm = nm + ' ×' + q;
+var amt = it.amount || '';
+if (q > 1) amt = amt ? (amt + ' ×' + q) : ('×' + q);
 return {
-name: it.name || '不明',
-amount: it.amount || '',
+name: nm,
+amount: amt,
 source: it.source || defaultSource,
-kcal: Math.round(num(it.kcal)),
-protein_g: round1(it.protein_g),
-fat_g: round1(it.fat_g),
-carbs_g: round1(it.carbs_g)
+qty: q,
+kcal: Math.round(num(it.kcal) * q),
+protein_g: round1(num(it.protein_g) * q),
+fat_g: round1(num(it.fat_g) * q),
+carbs_g: round1(num(it.carbs_g) * q)
 };
 });
 }
