@@ -40,7 +40,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: '画像が送信されていません' });
   }
   try {
-    var buffer = Buffer.from(image, 'base64');
+    var b64 = String(image).indexOf('base64,') >= 0 ? String(image).split('base64,')[1] : image;
+    var buffer = Buffer.from(b64, 'base64');
     var folder = code ? ('users-photos/' + code + '/' + kind) : deviceId;
     var pathname = folder + '/' + tsName();
     var result = await put(pathname, buffer, {
