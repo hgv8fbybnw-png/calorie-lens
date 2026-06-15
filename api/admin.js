@@ -25,7 +25,7 @@ export default async function handler(req, res) {
         var code = b.pathname.replace(/^users\//, '').replace(/\.json$/, '');
         var data = await fetchBlob(b);
         if (!data) continue;
-        out.push({ code: code, targets: data.targets || {}, log: data.log || {}, weight: data.weight || {}, workout: data.workout || {}, updatedAt: data.updatedAt || 0 });
+        out.push({ code: code, targets: data.targets || {}, log: data.log || {}, weight: data.weight || {}, workout: data.workout || {}, bodyfat: data.bodyfat || {}, muscle: data.muscle || {}, sleep: data.sleep || {}, measurements: data.measurements || {}, activityFactor: (data.activityFactor != null ? data.activityFactor : null), bodyPhotos: data.bodyPhotos || [], updatedAt: data.updatedAt || 0 });
       }
       cursor = resp && resp.cursor;
     } while (cursor);
