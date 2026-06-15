@@ -405,13 +405,14 @@ function workoutMinByDay(){var wo=getWorkout();var o={};for(var d in wo){var s=0
 var woCalView=null;function ymStr(y,m){return y+"-"+("0"+(m+1)).slice(-2);}function workoutDays(){var wo=getWorkout();var set={};for(var d in wo){if((wo[d]||[]).length)set[d]=1;}return set;}function renderWorkoutCalendar(){var grid=$("woCalGrid");if(!grid)return;var now=new Date();if(!woCalView)woCalView={y:now.getFullYear(),m:now.getMonth()};var y=woCalView.y,m=woCalView.m;var days=workoutDays();var first=new Date(y,m,1);var startDow=first.getDay();var dim=new Date(y,m+1,0).getDate();var todayK=todayStr();var titles=["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];$("woCalTitle").textContent=y+"年 "+titles[m];var html="";var i2;for(i2=0;i2<startDow;i2++){html+="<div class=\"woCalCell empty\"></div>";}var monthCount=0;for(var dd=1;dd<=dim;dd++){var key=ymStr(y,m)+"-"+("0"+dd).slice(-2);var done=!!days[key];if(done)monthCount++;var cls="woCalCell cur";if(done)cls+=" done";if(key===todayK)cls+=" today";html+="<div class=\""+cls+"\">"+dd+"</div>";}grid.innerHTML=html;$("woCalMonthCount").textContent=monthCount;$("woCalTotalCount").textContent=Object.keys(days).length;var stEl=$("woCalStreak");if(stEl){var st=0;var dcur=new Date();var pad2=function(n){return("0"+n).slice(-2)};var keyOf=function(dt){return dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate())};if(!days[keyOf(dcur)]){dcur.setDate(dcur.getDate()-1);}while(days[keyOf(dcur)]){st++;dcur.setDate(dcur.getDate()-1);}stEl.textContent=st;}}function woCalShift(delta){var now=new Date();if(!woCalView)woCalView={y:now.getFullYear(),m:now.getMonth()};var d=new Date(woCalView.y,woCalView.m+delta,1);woCalView={y:d.getFullYear(),m:d.getMonth()};renderWorkoutCalendar();}function renderWorkout(){var wo=getWorkout();var dates=Object.keys(wo).sort().reverse();var html='';dates.forEach(function(d){(wo[d]||[]).slice().reverse().forEach(function(e){var lbl=(e.part?e.part+' ':'')+e.name;html+='<div class="item"><span>'+d+' '+lbl+'</span><span>'+(e.min?e.min+'分':'')+(e.kcal?' / '+e.kcal+'kcal':'')+'</span></div>';});});$('woList').innerHTML=html||'<p class="muted">まだ記録がありません。</p>';renderWorkoutCalendar();}
 function calByDay(){var log=getLog();var o={};for(var d in log){var s=0;(log[d]||[]).forEach(function(e){s+=num(e.kcal);});o[d]=s;}return o;}
 function renderGraphs(){var cbd=calByDay();var tg=getTargets();drawBars("calChart",lastNDates(30).map(function(d){return {x:d,y:cbd[d]||0};}),"#16a34a",num(tg.kcal));var w=getWeight();drawLine("gWtChart",lastNDates(30).map(function(d){return {x:d,y:(d in w)?w[d]:null};}),"#2563eb");var bf=getBodyfat();var mu=getMuscle();drawLine("gBfChart",lastNDates(30).map(function(d){return {x:d,y:(d in bf)?bf[d]:null};}),"#f59e0b");drawLine("gMusChart",lastNDates(30).map(function(d){return {x:d,y:(d in mu)?mu[d]:null};}),"#7c3aed");}
-var scanStream=null, scanLoop=null, scanDetector=null, scanBusy=false;
-function scanSupported(){return (typeof window.BarcodeDetector!=="undefined");}
+var scanStream=null, scanLoop=null, scanDetector=null, scanBusy=false, scanZX=null, scanZXLib=null;
+function scanSupported(){return true;}
 function setScanMsg(t){var e=$("scanMsg");if(e)e.textContent=t||"";}
 function stopScan(){
   if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null;}
   if(scanStream){try{scanStream.getTracks().forEach(function(t){t.stop();});}catch(e){}scanStream=null;}
   var v=$("scanVideo");if(v){try{v.pause();}catch(e){}v.srcObject=null;}
+  if(scanZX){try{scanZX.reset();}catch(e){}scanZX=null;}
   $("scanModal").classList.remove("show");
 }
 function handleScannedCode(code){
@@ -432,6 +433,35 @@ function handleScannedCode(code){
     $("scanResult").innerHTML='<div class="err">照会に失敗しました: '+((e&&e.message)||"通信エラー")+'</div>';
   }).then(function(){scanBusy=false;});
 }
+function loadZXing(){
+  return new Promise(function(res,rej){
+    if(window.ZXing && window.ZXing.BrowserMultiFormatReader){res(window.ZXing);return;}
+    var sc=document.createElement('script');
+    sc.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+    sc.onload=function(){ if(window.ZXing){res(window.ZXing);} else {rej(new Error('zxing-load')); } };
+    sc.onerror=function(){rej(new Error('zxing-net'));};
+    document.head.appendChild(sc);
+  });
+}
+function startZXingScan(){
+  setScanMsg('読み取りエンジンを準備中…');
+  loadZXing().then(function(ZX){
+    setScanMsg('バーコードを枠内に映してください');
+    var hints=null;
+    try{
+      var fmts=[ZX.BarcodeFormat.EAN_13,ZX.BarcodeFormat.EAN_8,ZX.BarcodeFormat.UPC_A,ZX.BarcodeFormat.UPC_E,ZX.BarcodeFormat.CODE_128,ZX.BarcodeFormat.CODE_39];
+      hints=new Map();hints.set(ZX.DecodeHintType.POSSIBLE_FORMATS,fmts);hints.set(ZX.DecodeHintType.TRY_HARDER,true);
+    }catch(e){hints=null;}
+    scanZX=new ZX.BrowserMultiFormatReader(hints);
+    var v=$('scanVideo');
+    scanZX.decodeFromVideoElement(v,function(result,err){
+      if(result && !scanBusy){ handleScannedCode(result.getText()); }
+    }).catch(function(e){ setScanMsg('読み取りを開始できませんでした。下の写真からお試しください。'); });
+  }).catch(function(e){
+    setScanMsg('');
+    $('scanResult').innerHTML='<div class="hint">このブラウザでは自動読み取りエンジンを読み込めませんでした（通信環境をご確認ください）。下の「📷 写真を選ぶ」でバーコードが写った写真を撮ると読み取れます。</div>';
+  });
+}
 function scanTick(){
   var v=$("scanVideo");
   if(!scanDetector||!v||v.readyState<2){scanLoop=requestAnimationFrame(scanTick);return;}
@@ -451,7 +481,11 @@ function startScan(){
   navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false}).then(function(stream){
     scanStream=stream;var v=$("scanVideo");v.srcObject=stream;v.setAttribute("playsinline","");
     return v.play();
-  }).then(function(){setScanMsg("バーコードを枠内に映してください");scanLoop=requestAnimationFrame(scanTick);})
+  }).then(function(){
+    setScanMsg("バーコードを枠内に映してください");
+    if(typeof window.BarcodeDetector!=="undefined"){scanLoop=requestAnimationFrame(scanTick);}
+    else{startZXingScan();}
+  })
   .catch(function(e){setScanMsg("カメラを起動できませんでした: "+((e&&e.message)||"")+" 。カメラの許可をご確認ください。");});
 }
 function searchByName(){
