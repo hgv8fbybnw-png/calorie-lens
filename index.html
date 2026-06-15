@@ -476,7 +476,10 @@ function startScan(){
     return;
   }
   scanBusy=false;$("scanResult").innerHTML="";
-  try{scanDetector=new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128","code_39"]});}catch(e){scanDetector=new window.BarcodeDetector();}
+  scanDetector=null;
+  if(typeof window.BarcodeDetector!=="undefined"){
+    try{scanDetector=new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128","code_39"]});}catch(e){try{scanDetector=new window.BarcodeDetector();}catch(e2){scanDetector=null;}}
+  }
   $("scanModal").classList.add("show");setScanMsg("カメラを起動中…");
   navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false}).then(function(stream){
     scanStream=stream;var v=$("scanVideo");v.srcObject=stream;v.setAttribute("playsinline","");
