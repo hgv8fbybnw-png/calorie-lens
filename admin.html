@@ -89,6 +89,8 @@ svg.chart{width:100%;height:130px;display:block;overflow:visible}
 .fileBtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .cumNeg{font-size:28px;font-weight:800;color:#34d399}
 .cumNeg.pos{color:#f87171}
+.delBtn{background:transparent;border:none;color:#64748b;font-size:15px;cursor:pointer;padding:2px 6px;border-radius:8px;line-height:1;transition:.15s}
+.delBtn:hover{background:#3a1620;color:#f87171}
 </style>
 </head>
 <body>
@@ -296,7 +298,7 @@ function userCard(u,idx){
   var h='';
   h+='<div class="card"><div class="uhead" onclick="toggleU('+idx+')" id="uh'+idx+'">';
   h+='<div class="nm"><span class="dot '+(active?"on":"")+'"></span>'+esc(u.code)+'</div>';
-  h+='<div style="display:flex;align-items:center;gap:14px"><div class="meta"><span>直近 <b>'+todayKcal+'</b> kcal</span><span>累計マイナス <b>'+(cum.sum!=null?r0(cum.sum):"—")+'</b></span><span>体重 <b>'+(lastVal(u.weight)!=null?r1(lastVal(u.weight))+"kg":"—")+'</b></span></div><span class="chev">▶</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:14px"><div class="meta"><span>直近 <b>'+todayKcal+'</b> kcal</span><span>累計マイナス <b>'+(cum.sum!=null?r0(cum.sum):"—")+'</b></span><span>体重 <b>'+(lastVal(u.weight)!=null?r1(lastVal(u.weight))+"kg":"—")+'</b></span></div><button class="delBtn" title="このユーザーを削除" onclick="event.stopPropagation();deleteUser(\''+esc(u.code)+'\')">🗑</button><span class="chev">▶</span></div>';
   h+='</div><div class="ubody" id="ub'+idx+'">';
   h+='<div class="grid2">';
   h+='<div class="panel"><h4>累計マイナスカロリー <span class="tag">消費−摂取の総和</span></h4><div class="cumNeg'+(cum.sum!=null&&cum.sum<0?" pos":"")+'">'+(cum.sum!=null?(cum.sum>=0?"-":"+")+r0(Math.abs(cum.sum)).toLocaleString():"係数未設定")+'<small style="font-size:13px;color:#64748b;font-weight:600"> kcal</small></div><div class="hint">運動係数 '+(cum.af!=null?cum.af:"未設定")+' で計算</div></div>';
@@ -354,6 +356,15 @@ function load(){
 function userByCode(code){for(var i=0;i<users.length;i++){if(users[i].code===code)return users[i];}return null}
 function apiSave(extra){
   return fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:"save"},extra))}).then(function(r){return r.json()});
+}
+function deleteUser(code){
+if(!confirm("ユーザー「"+code+"」を削除します。\nこの操作は元に戻せません。本当に削除しますか？"))return;
+if(!confirm("最終確認：「"+code+"」の全データ（記録・写真・計測）を完全に削除します。よろしいですか？"))return;
+toast("削除中…");
+fetch("/api/admin",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:code})})
+.then(function(r){return r.json()})
+.then(function(j){if(j&&j.ok){toast("「"+code+"」を削除しました");setTimeout(load,1200);}else{toast("削除に失敗しました");}})
+.catch(function(){toast("削除に失敗しました")});
 }
 function saveActivity(code){
   var v=$("af_"+code).value.trim();
