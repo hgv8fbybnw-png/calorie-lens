@@ -250,22 +250,28 @@ function renderBodyPhotos(u){
 }
 
 function renderMeasure(u){
-  var m=u.measurements||{};
-  var dates=sortedDates(m).reverse();
-  var latest=dates.length?m[dates[0]]:{};
-  var fields=[["chest","胸囲"],["arm","腕"],["leg","脚"],["waist","ウエスト"],["shoulder","肩幅"]];
-  var h='<div class="hint" style="margin-bottom:8px">最新の計測値を入力（cm）'+(dates.length?' ・ 前回 '+esc(dates[0]):'')+'</div>';
-  fields.forEach(function(fp){
-    var v=(latest&&latest[fp[0]]!=null)?latest[fp[0]]:"";
-    h+='<div class="formRow"><label>'+fp[1]+'</label><input type="number" step="0.1" id="ms_'+esc(u.code)+'_'+fp[0]+'" value="'+esc(v)+'" placeholder="cm"></div>';
-  });
-  h+='<button class="btn sm primary" onclick="saveMeasure(\''+esc(u.code)+'\')">計測値を保存</button>';
-  if(dates.length>1){
-    h+='<div class="hint" style="margin-top:10px">履歴: ';
-    h+=dates.slice(0,5).map(function(d){return esc(d)}).join(' / ');
-    h+='</div>';
-  }
-  return h;
+var m=u.measurements||{};
+var dates=sortedDates(m).reverse();
+var latest=dates.length?m[dates[0]]:{};
+var fields=[
+["age","年齢"],["height","身長"],["constitution","体質"],["frame","骨格"],["posture","姿勢"],["flexibility","体の硬さ"],
+["sitHeight","坐高"],["chest","胸囲"],["waist","ウエスト"],["shoulder","肩幅"],
+["arm","腕(全体)"],["upperArm","腕(上腕/二頭)"],["forearm","腕(前腕)"],
+["leg","脚(全体)"],["thigh","脚(膝上)"],["lowerLeg","脚(膝下)"],
+["finger","指の長さ"],["palm","手のひらの大きさ"],["foot","足の大きさ"]
+];
+var h='<div class="hint" style="margin-bottom:8px">自由に記入できます（cm・歳・メモなど）'+(dates.length?' ・ 前回 '+esc(dates[0]):'')+'</div>';
+fields.forEach(function(fp){
+var v=(latest&&latest[fp[0]]!=null)?latest[fp[0]]:"";
+h+='<div class="formRow"><label>'+fp[1]+'</label><input type="text" id="ms_'+esc(u.code)+'_'+fp[0]+'" value="'+esc(v)+'" placeholder="記入"></div>';
+});
+h+='<button class="btn sm primary" onclick="saveMeasure(\''+esc(u.code)+'\')">計測値を保存</button>';
+if(dates.length>1){
+h+='<div class="hint" style="margin-top:10px">履歴: ';
+h+=dates.slice(0,5).map(function(d){return esc(d)}).join(' / ');
+h+='</div>';
+}
+return h;
 }
 function renderActivity(u){
   var af=(u.activityFactor!=null)?u.activityFactor:"";
@@ -357,16 +363,16 @@ function saveActivity(code){
   apiSave({code:code,activityFactor:af}).then(function(){toast("運動係数を保存しました");setTimeout(load,3500)});
 }
 function saveMeasure(code){
-  var fields=["chest","arm","leg","waist","shoulder"];
-  var rec={};var any=false;
-  fields.forEach(function(f){var el=$("ms_"+code+"_"+f);if(el&&el.value.trim()!==""){rec[f]=Number(el.value);any=true}});
-  if(!any){alert("少なくとも1項目入力してください");return}
-  var u=userByCode(code);
-  var m=(u&&u.measurements)?u.measurements:{};
-  var today=new Date().toISOString().slice(0,10);
-  m[today]=rec;
-  if(u)u.measurements=m;
-  apiSave({code:code,measurements:m}).then(function(){toast("計測値を保存しました");setTimeout(load,3500)});
+var fields=["age","height","constitution","frame","posture","flexibility","sitHeight","chest","waist","shoulder","arm","upperArm","forearm","leg","thigh","lowerLeg","finger","palm","foot"];
+var rec={};var any=false;
+fields.forEach(function(f){var el=$("ms_"+code+"_"+f);if(el&&String(el.value).trim()!==""){rec[f]=String(el.value).trim();any=true}});
+if(!any){alert("少なくとも1項目入力してください");return}
+var u=userByCode(code);
+var m=(u&&u.measurements)?u.measurements:{};
+var today=new Date().toISOString().slice(0,10);
+m[today]=rec;
+if(u)u.measurements=m;
+apiSave({code:code,measurements:m}).then(function(){toast("計測値を保存しました");setTimeout(load,3500)});
 }
 function uploadBody(code,inputEl){
   var f=inputEl.files&&inputEl.files[0];if(!f)return;
