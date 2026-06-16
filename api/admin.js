@@ -1,4 +1,4 @@
-import { list } from '@vercel/blob';
+import { list, del } from '@vercel/blob';
 
 export const config = { api: { bodyParser: { sizeLimit: '1mb' } } };
 
@@ -14,6 +14,15 @@ async function fetchBlob(b) {
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   try {
+    if (req.method === 'POST' || req.method === 'DELETE') {
+      var body = req.body || {};
+      var code = String(body.code || '').trim();
+      if (!code) return res.status(400).json({ ok: false, error: 'code required' });
+      var path = 'users/' + code + '.json';
+      await del(path, { token: TOKEN });
+      return res.status(200).json({ ok: true, deleted: code });
+    }
+
     var out = [];
     var cursor = undefined;
     do {
